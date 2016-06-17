@@ -67,5 +67,4 @@ brew tap caskroom/cask
 # Download The Unarchiver
 # Download VirtualBox
 # Download XAMPP
-
 brew cask install arduino beyond-compare cyberduck discord fluid flux google-chrome iterm2 macs-fan-control nwjs phpstorm quassel-client skype slack spectacle sqlitebrowser the-unarchiver virtualbox xampp
