@@ -68,3 +68,7 @@ brew tap caskroom/cask
 # Download VirtualBox
 # Download XAMPP
 brew cask install arduino beyond-compare cyberduck discord fluid flux google-chrome iterm2 macs-fan-control nwjs phpstorm quassel-client skype slack spectacle sqlitebrowser the-unarchiver virtualbox xampp
+
+# Fix ctrl-h for navigation mapping in neovim
+infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
+tic $TERM.ti
