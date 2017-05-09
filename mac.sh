@@ -6,7 +6,7 @@ echo "
 " >> ~/.vimrc;
 
 # Setup Bash Profile
-cat ./bash_profile >> ~/.bash_profile;
+cat ~/.bash_profile ./bash_profile;
 
 # Install Apple XCode CLI Tools
 xcode-select --install;
@@ -16,9 +16,6 @@ xcode-select --install;
 
 # Install Git and Git-Autocomplete
 brew install git && brew install bash-completion;
-
-# Add Git-Autocomplete to Bash Profile
-cat ~/.bash_profile ./bash_profile;
 
 # Install NVM
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.1/install.sh | bash;
