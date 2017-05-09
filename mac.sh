@@ -6,12 +6,7 @@ echo "
 " >> ~/.vimrc;
 
 # Setup Bash Profile
-echo "
-# Begin AdrianTP's Custom Profile Edits
-alias cpl='clear;pwd;ls -la'
-alias cplg='cpl; git status'
-PS1=\u\$"
-" >> ~/.bash_profile;
+cat ./bash_profile >> ~/.bash_profile;
 
 # Install Apple XCode CLI Tools
 xcode-select --install;
@@ -65,9 +60,6 @@ brew cask install \
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
 tic $TERM.ti
-<<<<<<< HEAD
 
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
-=======
->>>>>>> 8e5205404f4932775519ee2228f30c6afd2b4987
