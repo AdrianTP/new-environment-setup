@@ -65,6 +65,9 @@ brew cask install \
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
 tic $TERM.ti
+<<<<<<< HEAD
 
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
+=======
+>>>>>>> 8e5205404f4932775519ee2228f30c6afd2b4987
