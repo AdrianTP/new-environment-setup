@@ -23,12 +23,7 @@ xcode-select --install;
 brew install git && brew install bash-completion;
 
 # Add Git-Autocomplete to Bash Profile
-echo "
-# Git-Autocomplete
-if [ -f $(brew --prefix)/etc/bash_completion ]; then
-  . $(brew --prefix)/etc/bash_completion
-fi
-" >> ~/.bash_profile;
+cat ~/.bash_profile ./bash_profile;
 
 # Install NVM
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.1/install.sh | bash;
@@ -45,26 +40,31 @@ sudo gem install sass; sudo gem install compass --pre; sudo gem install susy;
 # Install Composer
 curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer;
 
+# Install CLI tools via Homebrew
+brew install\
+  autoconf automake bash bash-completion cmake coreutils cscope dirmngr \
+  exercism ffmpeg findutils flac gawk gdbm gettext git gmp gnu-getopt \
+  gnu-indent gnu-sed gnu-tar gnupg gnupg2 gnutls gpg-agent grep id3lib \
+  id3v2 itermocil jemalloc lame libao libassuan libevent libffi libgcrypt \
+  libgpg-error libksba libogg libpng libtasn1 libtermkey libtool libusb \
+  libusb-compat libuv libvorbis libvterm libyaml macvim mad mpfr msgpack \
+  neovim nettle openssl pcre perl phantomjs pinentry pkg-config postgresql pth \
+  python qt55 qt@5.5 readline redis rename ruby ruby-install sox sqlite tig \
+  tmux unibilium vim vorbis-tools x264 xvid
+
 # Install Homebrew Cask
 brew tap caskroom/cask
 
-# Download Arduino
-# Download Beyond Compare
-# Download Cyberduck
-# Download Discord
-# Download Fluid
-# Download Flux
-# Download Google Chrome
-# Download iTerm
-# Download Macs Fan Control
-# Download node-webkit
-# Download PhpStorm
-# Download Quassel Client
-# Download Skype
-# Download Slack
-# Download Spectacle
-# Download sqlitebrowser
-# Download The Unarchiver
-# Download VirtualBox
-# Download XAMPP
-brew cask install arduino beyond-compare cyberduck discord fluid flux google-chrome iterm2 macs-fan-control nwjs phpstorm quassel-client skype slack spectacle sqlitebrowser the-unarchiver virtualbox xampp
+brew cask install \
+  arduino atom bettertouchtool beyond-compare cyberduck discord electron fluid \
+  flux gimp gog-galaxy google-chrome inkscape iterm2 logitech-options macdown \
+  macs-fan-control nwjs origin phpstorm quassel-client skype slack spectacle \
+  sqlitebrowser steam sublime-text teamviewer the-unarchiver vimr virtualbox \
+  vlc xampp xquartz
+
+# Fix ctrl-h for navigation mapping in neovim
+infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
+tic $TERM.ti
+
+mkdir -p ~/.config/nvim
+cp ./neovim.vim ~/.config/nvim/init.vim
