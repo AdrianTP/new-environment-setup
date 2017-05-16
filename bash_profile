@@ -13,3 +13,6 @@ alias electron='/Applications/Electron.app/Contents/MacOS/Electron'
 if [ -f $(brew --prefix)/etc/bash_completion ]; then
     . $(brew --prefix)/etc/bash_completion
 fi
+
+# iTermocil Autocomplete
+complete -W "$(itermocil --list)" itermocil
