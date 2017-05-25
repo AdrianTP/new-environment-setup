@@ -33,5 +33,3 @@ tic $TERM.ti
 
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
-
-ln -s ./pdiff.sh /usr/local/bin/pdiff
