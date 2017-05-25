@@ -1,0 +1,12 @@
+# General
+alias cpl='clear;pwd;ls -la'
+alias cplg='cpl; git status'
+
+# Ruby Bundler
+alias be='bundle exec'
+alias bi='bundle install'
+alias bu='bundle update'
+
+# Node-Webkit and Electron
+alias nw='/Applications/nwjs.app/Contents/MacOS/nwjs'
+alias electron='/Applications/Electron.app/Contents/MacOS/Electron'

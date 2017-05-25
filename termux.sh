@@ -16,7 +16,7 @@ if [[ ! -f $profile ]]; then
   touch $profile
 fi
 
-cat $profile ./bash_profile;
+cat $profile ./profile_termux alias_termux;
 
 # Install Grunt and Bower
 #npm install -g grunt-cli; npm install -g bower;
