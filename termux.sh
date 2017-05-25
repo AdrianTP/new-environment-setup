@@ -8,16 +8,10 @@ packages install \
 # Setup VIM Preferences
 echo "
 :set softtabstop=4 shiftwidth=4 expandtab nowrap number
-" >> ~/.vimrc;
+" >> ~/.vimrc
 
 # Setup Bash Profile
-profile="~/.bash_profile"
-
-if [[ ! -f $profile ]]; then
-  touch $profile
-fi
-
-cat $profile ./profile_termux alias_termux;
+cat profile_termux alias_termux >> ~/.bash_profile
 
 # Install Grunt and Bower
 #npm install -g grunt-cli; npm install -g bower;
@@ -34,3 +28,5 @@ tic $TERM.ti
 
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
+
+source ~/.bash_profile

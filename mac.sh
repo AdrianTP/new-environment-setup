@@ -6,7 +6,7 @@ echo "
 " >> ~/.vimrc;
 
 # Setup Bash Profile
-cat ~/.bash_profile ./profile_mac ./alias_mac;
+cat profile_mac alias_mac >> ~/.bash_profile;
 
 # Install Apple XCode CLI Tools
 xcode-select --install;
@@ -63,3 +63,5 @@ cp ./neovim.vim ~/.config/nvim/init.vim
 
 ln -s ./pdiff.sh /usr/local/bin/pdiff
 ln -s ./dockspace.sh /usr/local/bin/dockspace
+
+source ~/.bash_profile
