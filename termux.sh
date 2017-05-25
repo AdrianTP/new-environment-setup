@@ -1,7 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
 # Install Termux dependencies
-packages install termux-tools neovim git openssh coreutils
+packages install \
+  termux-tools neovim git openssh coreutils ncurses-utils
 #packages intall nodejs ruby php
 
 # Setup VIM Preferences
