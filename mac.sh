@@ -24,7 +24,7 @@ curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.1/install.sh | b
 nvm install stable; nvm install iojs; nvm alias default stable;
 
 # Install Grunt and Bower
-npm install -g grunt-cli; nam install -g bower;
+npm install -g grunt-cli; npm install -g bower;
 
 # Install Sass, Compass, and Susy
 sudo gem install sass; sudo gem install compass --pre; sudo gem install susy;
@@ -42,7 +42,7 @@ brew install\
   libusb-compat libuv libvorbis libvterm libyaml macvim mad mpfr msgpack \
   neovim nettle openssl pcre perl phantomjs pinentry pkg-config postgresql pth \
   python qt55 qt@5.5 readline redis rename ruby ruby-install sox sqlite tig \
-  tmux unibilium vim vorbis-tools x264 xvid
+  tmux unibilium vim vorbis-tools x264 xvid icdiff
 
 # Install Homebrew Cask
 brew tap caskroom/cask
@@ -60,3 +60,5 @@ tic $TERM.ti
 
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
+
+ln -s ./pdiff.sh /usr/local/bin/pdiff
