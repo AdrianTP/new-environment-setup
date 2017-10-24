@@ -758,7 +758,10 @@ nnoremap <Leader>w <C-w>
 " map <leader>j :wincmd j<CR>
 " map <leader>k :wincmd k<CR>
 " map <leader>l :wincmd l<CR>
-" let g:BASH_Ctrl_j = 'off'
-" let g:BASH_Ctrl_k = 'off'
-" let g:BASH_Ctrl_h = 'off'
-" let g:BASH_Ctrl_l = 'off'
+let g:BASH_Ctrl_j = 'off'
+let g:BASH_Ctrl_k = 'off'
+let g:BASH_Ctrl_h = 'off'
+let g:BASH_Ctrl_l = 'off'
+
+set splitbelow
+set splitright
