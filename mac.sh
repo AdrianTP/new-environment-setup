@@ -42,7 +42,7 @@ brew install\
   libusb-compat libuv libvorbis libvterm libyaml macvim mad mpfr msgpack \
   neovim nettle openssl pcre perl phantomjs pinentry pkg-config postgresql pth \
   python qt55 qt@5.5 readline redis rename ruby ruby-install sox sqlite tig \
-  tmux unibilium vim vorbis-tools x264 xvid icdiff
+  tmux unibilium vim vorbis-tools x264 xvid icdiff filezilla
 
 # Install Homebrew Cask
 brew tap caskroom/cask

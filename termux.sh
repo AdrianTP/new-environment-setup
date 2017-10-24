@@ -29,4 +29,4 @@ tic $TERM.ti
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
 
-source ~/.bash_profile
+. ~/.bash_profile
