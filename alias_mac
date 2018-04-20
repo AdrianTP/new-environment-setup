@@ -2,11 +2,33 @@
 alias cpl='clear;pwd;ls -la'
 alias cplg='cpl; git status'
 
+#PS1=\u\$
+alias dockspace='~/dockspace.sh'
+
 # Ruby Bundler
 alias be='bundle exec'
+alias larry='be cucumber'
 alias bi='bundle install'
 alias bu='bundle update'
+
+# Rails Migrations
+alias migrate='bin/rake db:migrate RAILS_ENV=development'
 
 # Node-Webkit and Electron
 alias nw='/Applications/nwjs.app/Contents/MacOS/nwjs'
 alias electron='/Applications/Electron.app/Contents/MacOS/Electron'
+
+# Lazy Git Shortcuts
+alias gb='git branch'
+alias gch='git checkout'
+alias gco='git commit'
+alias gd='git diff'
+alias gf='git fetch'
+alias gl='git log'
+alias gpl='git pull'
+alias gplu='git pull upstream'
+alias gplo='git pull origin'
+alias gps='git push'
+alias gpso='git push origin'
+alias gr='git reset'
+alias gs='git stash'
