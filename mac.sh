@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Include utils
+# From: https://stackoverflow.com/a/12694189/771948
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
+. "$DIR/utils/readarray.sh"
+
 # Setup VIM Preferences
 echo "
 :set softtabstop=4 shiftwidth=4 expandtab nowrap number
@@ -33,27 +39,15 @@ sudo gem install sass; sudo gem install compass --pre; sudo gem install susy;
 curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer;
 
 # Install CLI tools via Homebrew
-brew install\
-  autoconf automake bash bash-completion cmake coreutils cscope dirmngr \
-  exercism ffmpeg findutils flac gawk gdbm gettext git gmp gnu-getopt \
-  gnu-indent gnu-sed gnu-tar gnupg gnupg2 gnutls gpg-agent grep id3lib \
-  id3v2 itermocil jemalloc lame libao libassuan libevent libffi libgcrypt \
-  libgpg-error libksba libogg libpng libtasn1 libtermkey libtool libusb \
-  libusb-compat libuv libvorbis libvterm libyaml macvim mad mpfr msgpack \
-  neovim nettle openssl pcre perl phantomjs pinentry pkg-config postgresql pth \
-  python qt55 qt@5.5 readline redis rename ruby ruby-install sox sqlite tig \
-  tmux unibilium vim vorbis-tools x264 xvid icdiff filezilla adns go httrack \
-  libunistring npth openssl@1.1 p11-kit watch wget
+readarray "brew_array" "brewpkg.txt"
+brew install ${brew_array[@]}
 
 # Install Homebrew Cask
 brew tap caskroom/cask
 
-brew cask install \
-  arduino atom bettertouchtool beyond-compare cyberduck discord electron fluid \
-  flux gimp gog-galaxy google-chrome inkscape iterm2 logitech-options macdown \
-  macs-fan-control nwjs origin phpstorm quassel-client skype slack spectacle \
-  sqlitebrowser steam sublime-text teamviewer the-unarchiver vimr virtualbox \
-  vlc xampp xquartz
+# Install GUI tools via Homebrew Cask
+readarray "brew_cask_array" "brewcaskpkg.txt"
+brew cask install ${brew_array[@]}
 
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
