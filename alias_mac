@@ -1,6 +1,8 @@
 # General
 alias cpl='clear;pwd;ls -la'
 alias cplg='cpl; git status'
+alias pbp='pbpaste'
+alias pbc='pbcopy'
 
 #PS1=\u\$
 alias dockspace='~/dockspace.sh'
