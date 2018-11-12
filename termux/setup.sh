@@ -1,8 +1,14 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-# Install Termux dependencies
-packages install \
-  termux-tools neovim git openssh coreutils ncurses-utils
+# Include utils
+# From: https://stackoverflow.com/a/12694189/771948
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
+. "$DIR/utils/readarray.sh"
+
+# Install Termux tools
+readarray "termux_array" "pkg.txt"
+packages install ${termux_pkg[@]}
 #packages intall nodejs ruby php
 
 # Setup VIM Preferences
@@ -11,7 +17,7 @@ echo "
 " >> ~/.vimrc
 
 # Setup Bash Profile
-cat profile_termux alias_termux >> ~/.bash_profile
+cat profile aliases >> ~/.bash_profile
 
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
