@@ -9,10 +9,10 @@ if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 # Setup VIM Preferences
 echo "
 :set softtabstop=4 shiftwidth=4 expandtab nowrap number
-" >> ~/.vimrc;
+" >> "$HOME/.vimrc";
 
 # Setup Bash Profile
-cat profile aliases >> ~/.bash_profile;
+cat profile aliases >> "$HOME/.bash_profile";
 
 # Install Apple XCode CLI Tools
 xcode-select --install;
@@ -50,11 +50,14 @@ readarray "brew_cask_array" "pkg_brew_cask.txt"
 brew cask install ${brew_cask_array[@]}
 
 # Fix ctrl-h for navigation mapping in neovim
+OLDDIR=$PWD
+cd $HOME
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
 tic $TERM.ti
+cd $OLDDIR
 
-mkdir -p ~/.config/nvim
-cp ./neovim.vim ~/.config/nvim/init.vim
+mkdir -p "$HOME/.config/nvim"
+cp ../common/neovim.vim "$HOME/.config/nvim/init.vim"
 
 ln -s ./utils/pdiff.sh /usr/local/bin/pdiff
 ln -s ./utils/dockspace.sh /usr/local/bin/dockspace
@@ -62,4 +65,4 @@ ln -s ./utils/serve.sh /usr/local/serve
 ln -s ./utils/title.sh /usr/local/title
 ln -s ./utils/stfu.sh /usr/local/stfu
 
-source ~/.bash_profile
+source "$HOME/.bash_profile"

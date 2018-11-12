@@ -14,16 +14,19 @@ packages install ${termux_pkg[@]}
 # Setup VIM Preferences
 echo "
 :set softtabstop=4 shiftwidth=4 expandtab nowrap number
-" >> ~/.vimrc
+" >> "$HOME/.vimrc"
 
 # Setup Bash Profile
-cat profile aliases >> ~/.bash_profile
+cat profile aliases >> "$HOME/.bash_profile"
 
 # Fix ctrl-h for navigation mapping in neovim
+OLDDIR=$PWD
+cd $HOME
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
 tic $TERM.ti
+cd $OLDDIR
 
-mkdir -p ~/.config/nvim
-cp ./neovim.vim ~/.config/nvim/init.vim
+mkdir -p "$HOME/.config/nvim"
+cp ../common/neovim.vim ~/.config/nvim/init.vim
 
-. ~/.bash_profile
+source "$HOME/.bash_profile"
