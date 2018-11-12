@@ -60,5 +60,6 @@ ln -s ./utils/pdiff.sh /usr/local/bin/pdiff
 ln -s ./utils/dockspace.sh /usr/local/bin/dockspace
 ln -s ./utils/serve.sh /usr/local/serve
 ln -s ./utils/title.sh /usr/local/title
+ln -s ./utils/stfu.sh /usr/local/stfu
 
 source ~/.bash_profile

@@ -1,4 +1,9 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Install Termux dependencies
+packages install \
+  termux-tools neovim git openssh coreutils ncurses-utils
+#packages intall nodejs ruby php
 
 # Setup VIM Preferences
 echo "
@@ -6,7 +11,7 @@ echo "
 " >> ~/.vimrc
 
 # Setup Bash Profile
-cat profile_linux alias_linux >> ~/.bash_profile
+cat profile_termux alias_termux >> ~/.bash_profile
 
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
