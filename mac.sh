@@ -47,7 +47,7 @@ brew tap caskroom/cask
 
 # Install GUI tools via Homebrew Cask
 readarray "brew_cask_array" "brewcaskpkg.txt"
-brew cask install ${brew_array[@]}
+brew cask install ${brew_cask_array[@]}
 
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
@@ -56,7 +56,8 @@ tic $TERM.ti
 mkdir -p ~/.config/nvim
 cp ./neovim.vim ~/.config/nvim/init.vim
 
-ln -s ./pdiff.sh /usr/local/bin/pdiff
-ln -s ./dockspace.sh /usr/local/bin/dockspace
+ln -s ./utils/* /urs/local/bin/
+# ln -s ./utils/pdiff.sh /usr/local/bin/pdiff
+# ln -s ./utils/dockspace.sh /usr/local/bin/dockspace
 
 source ~/.bash_profile
