@@ -11,6 +11,8 @@ elif [ $var = "/data/data/com.termux/files/usr/bin/bash" ]; then
   ./termux.sh
 elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
   # 32-bit Windows
+  echo 'Does not support 32-bit Windows yet'
 elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
   # 64-bit Windows
+  echo 'Does not support 64-bit Windows yet'
 fi
