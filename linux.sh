@@ -13,15 +13,6 @@ echo "
 # Setup Bash Profile
 cat profile_termux alias_termux >> ~/.bash_profile
 
-# Install Grunt and Bower
-#npm install -g grunt-cli; npm install -g bower;
-
-# Install Sass, Compass, and Susy
-#sudo gem install sass; sudo gem install compass --pre; sudo gem install susy;
-
-# Install Composer
-#curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer;
-
 # Fix ctrl-h for navigation mapping in neovim
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
 tic $TERM.ti
