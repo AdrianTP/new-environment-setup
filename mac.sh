@@ -39,14 +39,14 @@ sudo gem install sass; sudo gem install compass --pre; sudo gem install susy;
 curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer;
 
 # Install CLI tools via Homebrew
-readarray "brew_array" "brew-pkg.txt"
+readarray "brew_array" "brew_pkg.txt"
 brew install ${brew_array[@]}
 
 # Install Homebrew Cask
 brew tap caskroom/cask
 
 # Install GUI tools via Homebrew Cask
-readarray "brew_cask_array" "brew-cask-pkg.txt"
+readarray "brew_cask_array" "brew_cask_pkg.txt"
 brew cask install ${brew_cask_array[@]}
 
 # Fix ctrl-h for navigation mapping in neovim
