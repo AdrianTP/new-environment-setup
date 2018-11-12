@@ -50,6 +50,7 @@ readarray "brew_cask_array" "pkg_brew_cask.txt"
 brew cask install ${brew_cask_array[@]}
 
 # Fix ctrl-h for navigation mapping in neovim
+# https://github.com/christoomey/vim-tmux-navigator/issues/71
 OLDDIR=$PWD
 cd $HOME
 infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
