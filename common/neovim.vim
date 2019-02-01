@@ -151,6 +151,8 @@ Plug 'mattn/emmet-vim'
 " javascript
 "" Javascript Bundle
 Plug 'jelera/vim-javascript-syntax'
+Plug 'pangloss/vim-javascript'
+Plug 'mxw/vim-jsx'
 
 
 " php
@@ -610,14 +612,19 @@ augroup END
 " for html files, 2 spaces
 autocmd Filetype html setlocal ts=2 sw=2 expandtab
 
+" css
+autocmd Filetype css setlocal ts=2 sw=2 expandtab
+
 
 " javascript
 let g:javascript_enable_domhtmlcss = 1
+let g:javascript_plugin_flow = 1
+let g:jsx_ext_required = 0
 
 " vim-javascript
 augroup vimrc-javascript
   autocmd!
-  autocmd FileType javascript set tabstop=4|set shiftwidth=4|set expandtab softtabstop=4
+  autocmd FileType javascript set tabstop=2|set shiftwidth=2|set expandtab softtabstop=2
 augroup END
 
 
@@ -767,3 +774,6 @@ set splitbelow
 set splitright
 set ruler
 set colorcolumn=81
+
+" disable fmt on save
+let g:go_fmt_autosave = 0
