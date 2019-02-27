@@ -6,14 +6,6 @@ DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 . "$DIR/utils/readarray.sh"
 
-# Setup VIM Preferences
-echo "
-:set softtabstop=4 shiftwidth=4 expandtab nowrap number
-" >> "$HOME/.vimrc";
-
-# Setup Bash Profile
-cat profile aliases >> "$HOME/.bash_profile";
-
 # Install Apple XCode CLI Tools
 xcode-select --install;
 
@@ -49,21 +41,8 @@ brew tap caskroom/cask
 readarray "brew_cask_array" "pkg_brew_cask.txt"
 brew cask install ${brew_cask_array[@]}
 
-# Fix ctrl-h for navigation mapping in neovim
-# https://github.com/christoomey/vim-tmux-navigator/issues/71
-OLDDIR=$PWD
-cd $HOME
-infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
-tic $TERM.ti
-cd $OLDDIR
-
-mkdir -p "$HOME/.config/nvim"
-cp ../common/neovim.vim "$HOME/.config/nvim/init.vim"
-
 ln -s ./utils/pdiff.sh /usr/local/bin/pdiff
 ln -s ./utils/dockspace.sh /usr/local/bin/dockspace
-ln -s ./utils/serve.sh /usr/local/serve
-ln -s ./utils/title.sh /usr/local/title
-ln -s ./utils/stfu.sh /usr/local/stfu
-
-source "$HOME/.bash_profile"
+ln -s ./utils/serve.sh /usr/local/bin/serve
+ln -s ./utils/title.sh /usr/local/bin/title
+ln -s ./utils/stfu.sh /usr/local/bin/stfu
