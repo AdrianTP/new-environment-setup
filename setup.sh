@@ -22,7 +22,7 @@ fi
 # Setup Bash Profile
 cat "$OS/profile" "$OS/aliases" >> "$HOME/.test_output"
 
-# Setup VIM Preferences
+# Setup basic VIM Preferences
 echo "
 :set softtabstop=4 shiftwidth=4 expandtab nowrap number
 " >> "$HOME/.vimrc"
@@ -35,6 +35,7 @@ infocmp $TERM | sed 's/kbs=^[hH]/kbs=\\177/' > $TERM.ti
 tic $TERM.ti
 cd $OLDDIR
 
+# Copy my Neovim config into the appropriate directory
 mkdir -p "$HOME/.config/nvim"
 cp ./common/neovim.vim "$HOME/.config/nvim/init.vim"
 
