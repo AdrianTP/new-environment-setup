@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 mkdir -p output
 for i in *.wav; do
   # sox "$i" output/"$i.mp3" rate -v

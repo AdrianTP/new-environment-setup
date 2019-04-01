@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # iTerm window title function
 # Record title from user input, or as user argument

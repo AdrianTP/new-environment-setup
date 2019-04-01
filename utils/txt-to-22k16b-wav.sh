@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 count=0
 while IFS='' read -r line || [[ -n "$line" ]]; do
   echo "Text read from file: $line"
