@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ln -s ./utils/pdiff.sh /usr/local/bin/pdiff
 ln -s ./utils/serve.sh /usr/local/bin/serve
