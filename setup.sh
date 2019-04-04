@@ -1,26 +1,29 @@
 #!/usr/bin/env bash
 
 if [ "$(uname)" == "Darwin" ]; then
-  # Mac OS X
-  OS='mac'
+	# Mac OS X
+	OS='mac'
+	PROFILE='.bash_profile'
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-  # Linux
-  OS='linux'
+	# Linux
+	OS='linux'
+	PROFILE='.bashrc'
 elif [ $var = "/data/data/com.termux/files/usr/bin/bash" ]; then
-  # Termux # thanks to https://github.com/KonradIT/dotfiles/blob/master/bashrc#L235
-  OS='termux'
+	# Termux # thanks to https://github.com/KonradIT/dotfiles/blob/master/bashrc#L235
+	OS='termux'
+	PROFILE='.bashrc'
 elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
-  # 32-bit Windows
-  echo 'Does not support 32-bit Windows yet'
-  return 1
+	# 32-bit Windows
+	echo 'Does not support 32-bit Windows yet'
+	return 1
 elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
-  # 64-bit Windows
-  echo 'Does not support 64-bit Windows yet'
-  return 1
+	# 64-bit Windows
+	echo 'Does not support 64-bit Windows yet'
+	return 1
 fi
 
 # Setup Bash Profile
-cat "$OS/profile" "$OS/aliases" >> "$HOME/.test_output"
+cat "$OS/profile" "$OS/aliases" >> "$HOME/$PROFILE"
 
 # Setup basic VIM Preferences
 echo "
