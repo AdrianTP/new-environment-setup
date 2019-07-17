@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# From: https://stackoverflow.com/a/12694189/771948
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
+
+SRC_DIR=$(cd "$(dirname "$0")/.."; pwd)
+
+# $DIR is path from the run directory to this file
+# $SRC_DIR is the absolute path to the parent directory of this script
+
 if [ "$(uname)" == "Darwin" ]; then
 	# Mac OS X
 	OS='mac'

@@ -31,7 +31,7 @@ if [ -d "$TARGET" ]; then
 	printf "$MESSAGE every key in %s/\n" "$TARGET"
 	TARGET="$TARGET/*"
 elif valid_key_file "$TARGET"; then
-	printf "\n%s is a file\n" "$TARGET"
+	printf "\n%s is a ssh key file\n" "$TARGET"
 	printf "$MESSAGE %s\n" "$TARGET"
 else
 	printf "\n%s is not a valid public key file\n" "$TARGET"
