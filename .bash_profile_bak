@@ -1,0 +1,236 @@
+source "$HOME/.bashrc"
+source "$HOME/.profile"
+
+# Begin AdrianTP's Custom Profile Edits
+alias cpl='clear; pwd; ls -la'
+alias cplg='cpl; git status'
+alias pbp='pbpaste'
+alias pbc='pbcopy'
+#PS1=\u\$
+alias dockspace='~/dockspace.sh'
+alias be='bundle exec'
+alias larry='be cucumber'
+alias wwld='echo "What would Larry do?";be cucumber'
+alias bi='bundle install'
+alias bu='bundle update'
+alias migrate='bin/rake db:migrate RAILS_ENV=development'
+alias nw='/Applications/nwjs.app/Contents/MacOS/nwjs'
+alias electron='/Applications/Electron.app/Contents/MacOS/Electron'
+
+# Lazy Git Shortcuts
+alias gbr='git branch'
+alias gco='git checkout'
+alias gci='git commit'
+alias gdi='git diff'
+alias gfe='git fetch'
+alias glo='git log'
+alias gpl='git pull'
+alias gplu='git pull upstream'
+alias gplo='git pull origin'
+alias gps='git push'
+alias gpso='git push origin'
+alias gre='git reset'
+alias gst='git stash'
+alias latest='BN=$(git symbolic-ref --short -q HEAD); \
+  STM=$(gst); gco master; gplu master; \
+  gco $BN; if [[ $STM == Saved* ]]; then gst pop; fi'
+
+# XAMPP-VM SSH
+alias xampp-vm="ssh -i '/Users/athomas-prestemon/.bitnami/stackman/machines/xampp/ssh/id_rsa' -o StrictHostKeyChecking=no 'root@192.168.64.2'"
+
+# Tux Racer Docker
+alias tuxracer="docker run -dp 80:80 dtcooper/tuxracer-web && sleep 2 && python -m webbrowser http://localhost/"
+
+# alias http-ports="lsof -nP +c 15 | grep LISTEN"
+alias http-ports="sudo lsof -PiTCP -sTCP:LISTEN"
+# alias http-ports="netstat -ap tcp | grep -i listen"
+
+alias gobjdump="/usr/local/Cellar/binutils/2.32/bin/objdump"
+
+alias sleep_disable="sudo pmset -a sleep 0; sudo pmset -a hibernatemode 0; sudo pmset -a disablesleep 1;"
+alias sleep_enable="sudo pmset -a sleep 1; sudo pmset -a hibernatemode 3; sudo pmset -a disablesleep 0;"
+
+alias identity_snapshot="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
+
+alias pipeline="$HOME/enova/teams/jarvis/dev/pipeline/pipeline"
+
+# Change owner of all files belonging to a user/group
+# sudo find . -user old_user -group old_group -exec chown new_user:new_group "{}" \;
+# add `-h` flag to chown to make it work on symlinks, too!
+
+# Git Autocomplete
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+	. $(brew --prefix)/etc/bash_completion
+fi
+
+# iTermocil Autocomplete
+complete -W "$(itermocil --list)" itermocil
+
+repo() {
+	case $1 in
+		"8b"|"lambda-reports"|"odi"|"valkyries") ;;
+		*) return 1;;
+	esac
+
+	cd $HOME/enova/teams/jarvis/$1
+}
+
+project() {
+	declare -A projects=(
+		["flow_scripts"]="valkyries/flow_scripts"
+		["identity"]="8b/8b/apps/identity"
+		["identity_overlays"]="8b/8b/apps/identity_overlays"
+		["lambda-reports"]="lambda-reports"
+		["moriarty"]="8b/8b/apps/moriarty"
+		["odi"]="odi/odi"
+		["pipeline"]="dev/pipeline"
+		["transform-lookup"]="odi/transform-lookup"
+		["transform_lookup_staging_tests"]="odi/transform_lookup_staging_tests"
+	)
+
+	if [ -v "projects[$1]" ]; then
+		cd "$HOME/enova/teams/jarvis/${projects[$1]}"
+	else
+		echo "Project \"$1\" is not mapped."
+		return 1
+	fi
+}
+
+cucumber_verbose() {
+	be cucumber $1 --format pretty --expand
+}
+
+is_git_repo() {
+	[ -d .git ] && git rev-parse --git-dir > /dev/null 2>&1
+}
+
+git_config_enova() {
+	cwd=$(pwd)
+	start_dir="${1:-.}"
+	for d in $(find $start_dir -type d); do
+		dir_absolute=$(greadlink -f $d)
+		cd $dir_absolute
+		# if [ -d .git ] && git rev-parse --git-dir > /dev/null 2>&1; then
+		if is_git_repo; then
+			echo "Updating git config for $dir_absolute"
+			git config --local user.name "athomas8"
+			git config --local user.email "athomas8@enova.com"
+		fi
+	cd $cwd
+	done
+}
+
+git_uncommit() {
+	git reset --soft HEAD~1
+}
+
+git_unrebase() {
+	git reset --hard ORIG_HEAD
+}
+
+title() {
+	# Record title from user input, or as user argument
+	[ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
+	if [ -n "$1" ]; then # warning: $@ is somehow always non-empty!
+		echo -ne "\033]0;"$@"\007"
+	else
+		echo "Must specify a title"
+	fi
+}
+
+serve() {
+	PORT="${1:-8000}"
+	TYPE="${2:-ruby}"
+
+	# if [ -n "$2" ]; then
+	# 	TYPE=$2
+	# else
+	# 	TYPE='ruby'
+	# fi
+
+	if type ruby >/dev/null 2>&1; then
+		# $(ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => $PORT, :DocumentRoot => Dir.pwd).start')
+		$(ruby -run -ehttpd . -p$PORT) # Ruby 1.9.2+
+	elif php >/dev/null 2>&1; then
+		$(php -S localhost:$PORT)
+	elif python >/dev/null 2>&1; then
+		# $(python -m SimpleHTTPServer $PORT) # Python 2.x
+		$(python -m http.server $PORT) # Python 3.x
+	else
+		echo 'Missing required programmes'
+	fi
+}
+
+export NVIM_SESSION_DIR="$HOME/.vim/session"
+
+nvim_session_ls() {
+	if [ -z "$1" ]; then
+		ls "$NVIM_SESSION_DIR"
+	else
+		ls "$NVIM_SESSION_DIR" | grep "$1"
+	fi
+}
+
+nvim_session() {
+	# TODO: add autocomplete https://iridakos.com/tutorials/2018/03/01/bash-programmable-completion-tutorial.html
+	nvim -S "$NVIM_SESSION_DIR/$1.vim"
+}
+
+mkcd() {
+	mkdir -p "$@"
+	echo "made dirs, switching to $@"
+	builtin cd "$@"
+}
+
+# cd {
+# 	# actually change the directory with all args passed to the function
+# 	builtin cd "$@"
+# 	# if there's a regular file named "todo.txt"...
+# 	if [ -f "todo.txt" ] ; then
+# 		# display its contents
+# 		cat todo.txt
+# 	fi
+# 	# TODO: if git repo, cplg
+# }
+
+# git {
+# 	builtin git "$@"
+# 	# TODO: if clone command and if remotes contain "git.enova.com"
+# 	# TODO: then run git_config_enova
+# }
+
+# Neo4j Directories
+export NEO4J_DESKTOP_DIR="$HOME/Library/Application Support/Neo4j Desktop/Application/neo4jDatabases"
+export NEO4J_CLI_DIR=/usr/local/Cellar/neo4j
+
+export GOOGLE_API_KEY=AIzaSyBU4kvK7jEdQgKgJmyOXIENu9_87DTWQqE
+export GOOGLE_DEFAULT_CLIENT_ID=657412998219-4uu64jta609a4j1dds97vhs2l1b9j06l.apps.googleusercontent.com
+export GOOGLE_DEFAULT_CLIENT_SECRET=AIzaSyBU4kvK7jEdQgKgJmyOXIENu9_87DTWQqE
+
+export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+
+##
+# Your previous /Users/athomas-prestemon/.bash_profile file was backed up as /Users/athomas-prestemon/.bash_profile.macports-saved_2019-01-18_at_15:25:09
+##
+
+# MacPorts Installer addition on 2019-01-18_at_15:25:09: adding an appropriate PATH variable for use with MacPorts.
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+# Finished adapting your PATH environment variable for use with MacPorts.
+
+# Make OpenSSL be a thing
+export PATH="/usr/local/opt/openssl/bin:$PATH"
+export LDFLAGS="-L/usr/local/opt/openssl/lib"
+export CPPFLAGS="-I/usr/local/opt/openssl/include"
+export PKG_CONFIG_PATH="/usr/local/opt/openssl/lib/pkgconfig"
+
+# Make Ruby be a thing
+# export PATH="/usr/local/opt/ruby/bin:$PATH"
+# export LDFLAGS="-L/usr/local/opt/ruby/lib"
+# export CPPFLAGS="-I/usr/local/opt/ruby/include"
+# export PKG_CONFIG_PATH="/usr/local/opt/ruby/lib/pkgconfig"
+
+# From https://gemfury.com/help/could-not-verify-ssl-certificate/
+export SSL_CERT_FILE=/usr/local/etc/openssl/cert.pem
+
+# From https://stackoverflow.com/a/40372831/771948
+# export SSL_CERT_FILE=/usr/local/etc/openssl/cacert.pem
