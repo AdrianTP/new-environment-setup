@@ -36,7 +36,7 @@ alias latest='BN=$(git symbolic-ref --short -q HEAD); \
   gco $BN; if [[ $STM == Saved* ]]; then gst pop; fi'
 
 # XAMPP-VM SSH
-alias xampp-vm="ssh -i '/Users/athomas-prestemon/.bitnami/stackman/machines/xampp/ssh/id_rsa' -o StrictHostKeyChecking=no 'root@192.168.64.2'"
+alias xampp-vm="ssh -i '/Users/athomas8/.bitnami/stackman/machines/xampp/ssh/id_rsa' -o StrictHostKeyChecking=no 'root@192.168.64.2'"
 
 # Tux Racer Docker
 alias tuxracer="docker run -dp 80:80 dtcooper/tuxracer-web && sleep 2 && python -m webbrowser http://localhost/"
@@ -50,13 +50,14 @@ alias gobjdump="/usr/local/Cellar/binutils/2.32/bin/objdump"
 alias sleep_disable="sudo pmset -a sleep 0; sudo pmset -a hibernatemode 0; sudo pmset -a disablesleep 1;"
 alias sleep_enable="sudo pmset -a sleep 1; sudo pmset -a hibernatemode 3; sudo pmset -a disablesleep 0;"
 
-alias identity_snapshot="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
-
 alias pipeline="$HOME/enova/teams/jarvis/dev/pipeline/pipeline"
 
 # Change owner of all files belonging to a user/group
 # sudo find . -user old_user -group old_group -exec chown new_user:new_group "{}" \;
 # add `-h` flag to chown to make it work on symlinks, too!
+
+# Replace string in all found files
+# find . -type f -exec gsed -i -e 's/athomas-prestemon/athomas8/g' "{}" \;
 
 # Git Autocomplete
 if [ -f $(brew --prefix)/etc/bash_completion ]; then
@@ -66,6 +67,109 @@ fi
 # iTermocil Autocomplete
 complete -W "$(itermocil --list)" itermocil
 
+chredoby() {
+	redoby "$HOME/.rubies" $1
+}
+
+chbundlerfix() {
+	for d in $HOME/.rubies/*; do
+		ruby_version=$(basename $d)
+		echo "Installing bundler 1.17.3 for $ruby_version..."
+		chruby $ruby_version; gem install bundler -v '1.17.3';
+	done
+}
+
+redoby() {
+	# inspired by https://gist.github.com/yannvery/b1cf1a7b11ac84e798a5
+	# one or two args
+	# custom dir, soft: redoby <dir>
+	# custom dir, hard: redoby <dir> hard
+
+	read -r -d '' usage <<-'USAGE'
+		Usage:
+		  Soft mode (just reinstalls):
+		    redoby <rubies_directory>
+		  Hard mode (deletes rubies before reinstall):
+		    redoby <rubies_directory> hard
+	USAGE
+
+	echo "1 $#"
+
+	if [[ "$#" -eq 0 ]]; then echo $usage; return 1; fi
+
+	target_dir=$(cd "${1/#\~/$HOME}"; pwd)
+
+	echo "2"
+
+	[[ -z "$1" ]] && echo "path must not be blank";
+
+	echo "3"
+
+	[[ -d $target_dir ]] || return 1
+
+	echo "4 $target_dir-bak"
+	# backup directory
+	# cp -r "$target_dir" "$target_dir-bak"
+
+	echo "5"
+	# iterate versions
+	for r in $target_dir/*; do
+		echo "6 $r"
+		ruby_path=$(greadlink -f "$r")
+		ruby_version=$(basename "$ruby_path" | cut -d'-' -f 2)
+
+		echo "7 $ruby_path"
+		# if hard_mode, delete dir
+		[[ $2 = 'hard' ]] && echo "rm -rf $ruby_path"
+
+		# install ruby
+		ruby-build "$ruby_version" "$target_dir/ruby-$ruby_version"
+	done
+
+	echo "Done."
+	# echo "Be sure to delete $target_dir-bak once you're sure everything is working."
+}
+
+db() {
+	case $1 in
+		"identity_snapshot") psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W;;
+		"eis_reporting")psql -h eis-production-slavedb.enova.com -d production -p 5432 -U athomas8 -W;;
+		*) echo "Database shortcut \"$1\" does not exist";;
+	esac
+}
+
+_db() {
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	case "$cur" in
+		*) COMPREPLY=( $( compgen -W 'identity_snapshot eis_reporting' -- $cur ) );;
+	esac
+
+	return 0
+}
+
+complete -F _db -o filenames db
+
+# db() {
+# # alias identity_snapshot="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
+# # alias eis_reporting="psql -h eis-production-slavedb.enova.com -d production -p 5432 -U athomas8 -W"
+# 	declare -A db_connects=(
+# 		["identity_snapshot"]="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
+# 		["eis_reporting"]="psql -h eis-reporting-slavedb.enova.com -d staging -p 5432 -U athomas8 -W"
+# 	)
+
+# 	if [ -v "db_connects[$1]" ]; then
+# 		echo "Running: ${db_connects[$1]}"
+# 		${db_connects[$1]}
+# 	else
+# 		echo "Database shortcut \"$1\" is not mapped."
+# 		return 1
+# 	fi
+# }
+
 repo() {
 	case $1 in
 		"8b"|"lambda-reports"|"odi"|"valkyries") ;;
@@ -74,6 +178,21 @@ repo() {
 
 	cd $HOME/enova/teams/jarvis/$1
 }
+
+_repo() {
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	case "$cur" in
+		*) COMPREPLY=( $( compgen -W '8b lambda-reports odi valkyries' -- $cur ) );;
+	esac
+
+	return 0
+}
+
+complete -F _repo -o filenames repo
 
 project() {
 	declare -A projects=(
@@ -95,6 +214,23 @@ project() {
 		return 1
 	fi
 }
+
+_project() {
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	case "$cur" in
+		*) COMPREPLY=( $( compgen -W 'flow_scripts identity identity_overlays \
+			lambda_reports moriarty odi pipeline transform-lookup \
+			transform_lookup_staging_tests' -- $cur ) );;
+	esac
+
+	return 0
+}
+
+complete -F _project -o filenames project
 
 cucumber_verbose() {
 	be cucumber $1 --format pretty --expand
@@ -210,7 +346,7 @@ export GOOGLE_DEFAULT_CLIENT_SECRET=AIzaSyBU4kvK7jEdQgKgJmyOXIENu9_87DTWQqE
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 
 ##
-# Your previous /Users/athomas-prestemon/.bash_profile file was backed up as /Users/athomas-prestemon/.bash_profile.macports-saved_2019-01-18_at_15:25:09
+# Your previous /Users/athomas8/.bash_profile file was backed up as /Users/athomas8/.bash_profile.macports-saved_2019-01-18_at_15:25:09
 ##
 
 # MacPorts Installer addition on 2019-01-18_at_15:25:09: adding an appropriate PATH variable for use with MacPorts.
