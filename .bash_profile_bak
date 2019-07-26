@@ -130,22 +130,30 @@ redoby() {
 	# echo "Be sure to delete $target_dir-bak once you're sure everything is working."
 }
 
+declare -A dbs=(
+	["identity_snapshot"]="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
+	["eis_reporting"]="psql -h eis-production-slavedb.enova.com -d production -p 5432 -U athomas8 -W"
+)
+
 db() {
-	case $1 in
-		"identity_snapshot") psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W;;
-		"eis_reporting")psql -h eis-production-slavedb.enova.com -d production -p 5432 -U athomas8 -W;;
-		*) echo "Database shortcut \"$1\" does not exist";;
-	esac
+	if [ -v "dbs[$1]" ]; then
+		cd "$1"
+	else
+		echo "Database \"$1\" is not mapped."
+		return 1
+	fi
 }
 
 _db() {
 	local cur
+	local options
 
 	COMPREPLY=()
 	cur=${COMP_WORDS[COMP_CWORD]}
+	options=$(join_by ' ' "${!dbs[@]}")
 
 	case "$cur" in
-		*) COMPREPLY=( $( compgen -W 'identity_snapshot eis_reporting' -- $cur ) );;
+		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
 	esac
 
 	return 0
@@ -153,40 +161,32 @@ _db() {
 
 complete -F _db -o filenames db
 
-# db() {
-# # alias identity_snapshot="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
-# # alias eis_reporting="psql -h eis-production-slavedb.enova.com -d production -p 5432 -U athomas8 -W"
-# 	declare -A db_connects=(
-# 		["identity_snapshot"]="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
-# 		["eis_reporting"]="psql -h eis-reporting-slavedb.enova.com -d staging -p 5432 -U athomas8 -W"
-# 	)
-
-# 	if [ -v "db_connects[$1]" ]; then
-# 		echo "Running: ${db_connects[$1]}"
-# 		${db_connects[$1]}
-# 	else
-# 		echo "Database shortcut \"$1\" is not mapped."
-# 		return 1
-# 	fi
-# }
+declare -A repos=(
+	["8b"]="$HOME/enova/teams/jarvis/8b"
+	["lambda-reports"]="$HOME/enova/teams/jarvis/lambda-reports"
+	["odi"]="$HOME/enova/teams/jarvis/odi"
+	["valkyries"]="$HOME/enova/teams/jarvis/valkyries"
+)
 
 repo() {
-	case $1 in
-		"8b"|"lambda-reports"|"odi"|"valkyries") ;;
-		*) return 1;;
-	esac
-
-	cd $HOME/enova/teams/jarvis/$1
+	if [ -v "repos[$1]" ]; then
+		cd "$1"
+	else
+		echo "Repo \"$1\" is not mapped."
+		return 1
+	fi
 }
 
 _repo() {
 	local cur
+	local options
 
 	COMPREPLY=()
 	cur=${COMP_WORDS[COMP_CWORD]}
+	options=$(join_by ' ' "${!repos[@]}")
 
 	case "$cur" in
-		*) COMPREPLY=( $( compgen -W '8b lambda-reports odi valkyries' -- $cur ) );;
+		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
 	esac
 
 	return 0
@@ -194,21 +194,21 @@ _repo() {
 
 complete -F _repo -o filenames repo
 
-project() {
-	declare -A projects=(
-		["flow_scripts"]="valkyries/flow_scripts"
-		["identity"]="8b/8b/apps/identity"
-		["identity_overlays"]="8b/8b/apps/identity_overlays"
-		["lambda-reports"]="lambda-reports"
-		["moriarty"]="8b/8b/apps/moriarty"
-		["odi"]="odi/odi"
-		["pipeline"]="dev/pipeline"
-		["transform-lookup"]="odi/transform-lookup"
-		["transform_lookup_staging_tests"]="odi/transform_lookup_staging_tests"
-	)
+declare -A projects=(
+	["flow_scripts"]="$HOME/enova/teams/jarvis/valkyries/flow_scripts"
+	["identity"]="$HOME/enova/teams/jarvis/8b/8b/apps/identity"
+	["identity_overlays"]="$HOME/enova/teams/jarvis/8b/8b/apps/identity_overlays"
+	["lambda-reports"]="$HOME/enova/teams/jarvis/lambda-reports"
+	["moriarty"]="$HOME/enova/teams/jarvis/8b/8b/apps/moriarty"
+	["odi"]="$HOME/enova/teams/jarvis/odi/odi"
+	["pipeline"]="$HOME/enova/teams/jarvis/dev/pipeline"
+	["transform-lookup"]="$HOME/enova/teams/jarvis/odi/transform-lookup"
+	["transform_lookup_staging_tests"]="$HOME/enova/teams/jarvis/odi/transform_lookup_staging_tests"
+)
 
+project() {
 	if [ -v "projects[$1]" ]; then
-		cd "$HOME/enova/teams/jarvis/${projects[$1]}"
+		cd "$1"
 	else
 		echo "Project \"$1\" is not mapped."
 		return 1
@@ -217,20 +217,22 @@ project() {
 
 _project() {
 	local cur
+	local options
 
 	COMPREPLY=()
 	cur=${COMP_WORDS[COMP_CWORD]}
+	options=$(join_by ' ' "${!projects[@]}")
 
 	case "$cur" in
-		*) COMPREPLY=( $( compgen -W 'flow_scripts identity identity_overlays \
-			lambda_reports moriarty odi pipeline transform-lookup \
-			transform_lookup_staging_tests' -- $cur ) );;
+		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
 	esac
 
 	return 0
 }
 
 complete -F _project -o filenames project
+
+join_by() { local IFS="$1"; shift; echo "$*"; }
 
 cucumber_verbose() {
 	be cucumber $1 --format pretty --expand
