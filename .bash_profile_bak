@@ -230,20 +230,21 @@ _repo() {
 complete -F _repo -o filenames repo
 
 declare -A projects=(
-	["flow_scripts"]="$HOME/enova/teams/jarvis/valkyries/flow_scripts"
-	["identity"]="$HOME/enova/teams/jarvis/8b/8b/apps/identity"
-	["identity_overlays"]="$HOME/enova/teams/jarvis/8b/8b/apps/identity_overlays"
-	["lambda-reports"]="$HOME/enova/teams/jarvis/lambda-reports"
-	["moriarty"]="$HOME/enova/teams/jarvis/8b/8b/apps/moriarty"
-	["odi"]="$HOME/enova/teams/jarvis/odi/odi"
-	["pipeline"]="$HOME/enova/teams/jarvis/dev/pipeline"
-	["transform-lookup"]="$HOME/enova/teams/jarvis/odi/transform-lookup"
-	["transform_lookup_staging_tests"]="$HOME/enova/teams/jarvis/odi/transform_lookup_staging_tests"
+	["flow_scripts"]="enova/teams/jarvis/valkyries/flow_scripts"
+	["identity"]="enova/teams/jarvis/8b/8b/apps/identity"
+	["identity_overlays"]="enova/teams/jarvis/8b/identity_overlays"
+	["identity_staging_tests"]="enova/teams/jarvis/8b/identity_staging_tests"
+	["lambda-reports"]="enova/teams/jarvis/lambda-reports"
+	["moriarty"]="enova/teams/jarvis/8b/8b/apps/moriarty"
+	["odi"]="enova/teams/jarvis/odi/odi"
+	["pipeline"]="enova/teams/jarvis/dev/pipeline"
+	["transform-lookup"]="enova/teams/jarvis/odi/transform-lookup"
+	["transform_lookup_staging_tests"]="enova/teams/jarvis/odi/transform_lookup_staging_tests"
 )
 
 project() {
 	if [ -v "projects[$1]" ]; then
-		cd "${projects[$1]}"
+		cd "$HOME/${projects[$1]}"
 	else
 		echo "Project \"$1\" is not mapped."
 		return 1
