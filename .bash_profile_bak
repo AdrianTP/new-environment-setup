@@ -1,5 +1,6 @@
 source "$HOME/.bashrc"
 source "$HOME/.profile"
+source "$HOME/.google_api_keys"
 
 # Begin AdrianTP's Custom Profile Edits
 alias cpl='clear; pwd; ls -la'
@@ -380,10 +381,6 @@ mkcd() {
 # Neo4j Directories
 export NEO4J_DESKTOP_DIR="$HOME/Library/Application Support/Neo4j Desktop/Application/neo4jDatabases"
 export NEO4J_CLI_DIR=/usr/local/Cellar/neo4j
-
-export GOOGLE_API_KEY=AIzaSyBU4kvK7jEdQgKgJmyOXIENu9_87DTWQqE
-export GOOGLE_DEFAULT_CLIENT_ID=657412998219-4uu64jta609a4j1dds97vhs2l1b9j06l.apps.googleusercontent.com
-export GOOGLE_DEFAULT_CLIENT_SECRET=AIzaSyBU4kvK7jEdQgKgJmyOXIENu9_87DTWQqE
 
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 
