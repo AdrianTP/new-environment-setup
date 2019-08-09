@@ -58,7 +58,9 @@ alias gobjdump="/usr/local/Cellar/binutils/2.32/bin/objdump"
 alias sleep_disable="sudo pmset -a sleep 0; sudo pmset -a hibernatemode 0; sudo pmset -a disablesleep 1;"
 alias sleep_enable="sudo pmset -a sleep 1; sudo pmset -a hibernatemode 3; sudo pmset -a disablesleep 0;"
 
+# Enova-speciic stuff
 alias pipeline="$HOME/enova/teams/jarvis/dev/pipeline/pipeline"
+alias traps_stop="/Library/Application Support/PaloAltoNetworks/Traps/bin/cytool runtime stop all"
 
 # Change owner of all files belonging to a user/group
 # sudo find . -user old_user -group old_group -exec chown new_user:new_group "{}" \;
