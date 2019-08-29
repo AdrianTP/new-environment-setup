@@ -81,6 +81,8 @@ complete -W "$(itermocil --list)" itermocil
 # # Prevent Homebrew from automatically updating
 # export HOMEBREW_NO_AUTO_UPDATE=1
 
+# install a specific version of an app from Homebrew
+# usage: brew_install_version <name> <version>
 brew_install_version() {
 	DIR="$(pwd)"
 	REPO="$(brew --repo homebrew/core)"
