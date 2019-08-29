@@ -60,6 +60,7 @@ alias sleep_enable="sudo pmset -a sleep 1; sudo pmset -a hibernatemode 3; sudo p
 
 # Enova-speciic stuff
 alias pipeline="$HOME/enova/teams/jarvis/dev/pipeline/pipeline"
+# alias nconjure="$HOME/enova/teams/jarvis/netcredit/nconjure/bin/nconjure"
 alias traps_stop="/Library/Application Support/PaloAltoNetworks/Traps/bin/cytool runtime stop all"
 
 # Change owner of all files belonging to a user/group
@@ -175,7 +176,7 @@ declare -A dbs=(
 
 db() {
 	if [ -v "dbs[$1]" ]; then
-		cd "$1"
+		exec ${dbs[$1]}
 	else
 		echo "Database \"$1\" is not mapped."
 		return 1
@@ -199,13 +200,18 @@ _db() {
 
 complete -F _db -o filenames db
 
+# Map of local folders corresponding to Repos (Git Organisations)
 declare -A repos=(
 	["8b"]="$HOME/enova/teams/jarvis/8b"
+	["ed"]="$HOME/enova/teams/jarvis/enovadecisions"
+	["enovadecisions"]="$HOME/enova/teams/jarvis/enovadecisions"
+	["gems"]="$HOME/enova/teams/jarvis/gems"
 	["lambda-reports"]="$HOME/enova/teams/jarvis/lambda-reports"
 	["odi"]="$HOME/enova/teams/jarvis/odi"
 	["valkyries"]="$HOME/enova/teams/jarvis/valkyries"
 )
 
+# Takes you to the mapped local folder for the specified Repo (Git Organisation)
 repo() {
 	if [ -v "repos[$1]" ]; then
 		cd "${repos[$1]}"
@@ -215,6 +221,7 @@ repo() {
 	fi
 }
 
+# Enables suggestions in the terminal for the `repo` command
 _repo() {
 	local cur
 	local options
@@ -232,7 +239,10 @@ _repo() {
 
 complete -F _repo -o filenames repo
 
+# Map of local folders corresponding to Projects (Git Repositories)
 declare -A projects=(
+	["8b"]="enova/teams/jarvis/8b/8b"
+	["cra"]="enova/teams/jarvis/enovadecisions/cra"
 	["flow_scripts"]="enova/teams/jarvis/valkyries/flow_scripts"
 	["identity"]="enova/teams/jarvis/8b/8b/apps/identity"
 	["identity_overlays"]="enova/teams/jarvis/8b/identity_overlays"
@@ -241,10 +251,12 @@ declare -A projects=(
 	["moriarty"]="enova/teams/jarvis/8b/8b/apps/moriarty"
 	["odi"]="enova/teams/jarvis/odi/odi"
 	["pipeline"]="enova/teams/jarvis/dev/pipeline"
+	["sherlock"]="enova/teams/jarvis/gems/sherlock"
 	["transform-lookup"]="enova/teams/jarvis/odi/transform-lookup"
 	["transform_lookup_staging_tests"]="enova/teams/jarvis/odi/transform_lookup_staging_tests"
 )
 
+# Takes you to the mapped local folder for the specified Project (Git Repository)
 project() {
 	if [ -v "projects[$1]" ]; then
 		cd "$HOME/${projects[$1]}"
@@ -254,6 +266,7 @@ project() {
 	fi
 }
 
+# Enables suggestions in the terminal for the `project` command
 _project() {
 	local cur
 	local options
