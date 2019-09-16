@@ -1,9 +1,9 @@
 source "$HOME/.bashrc"
 source "$HOME/.profile"
-source "$HOME/.google_api_keys"
+source "$HOME/.private"
 
 # Begin AdrianTP's Custom Profile Edits
-alias cpl='clear; pwd; ls -la'
+alias cpl='clear; pwd; ls -ahl'
 alias cplg='cpl; git status'
 alias pbp='pbpaste'
 alias pbc='pbcopy'
@@ -171,10 +171,25 @@ redoby() {
 	# echo "Be sure to delete $target_dir-bak once you're sure everything is working."
 }
 
-declare -A dbs=(
-	["identity_snapshot"]="psql -h ident-ss-dbadm-7689-snapshot-userdb.enova.com -d identity_prod_nc -p 5432 -U identity__owner -W"
-	["eis_reporting"]="psql -h eis-production-slavedb.enova.com -d production -p 5432 -U athomas8 -W"
-)
+gem_pristine() {
+	versions=$(chruby)
+	rubies_dir="$HOME/.rubies"
+
+	for r in $rubies_dir/*; do
+		ruby_path=$(greadlink -f "$r")
+		ruby_version=$(basename "$ruby_path" | cut -d'-' -f 2)
+
+		echo "running 'gem pristine --all' on ruby $ruby_version"
+
+		chruby $ruby_version && gem pristine --all
+	done
+}
+
+if [ -z $dbs ]; then
+	declare -A dbs=(
+		["example"]="psql -h <db_server_address> -d <db_name> -p <port> -U <username> -W"
+	)
+fi
 
 db() {
 	if [ -v "dbs[$1]" ]; then
@@ -202,16 +217,11 @@ _db() {
 
 complete -F _db -o filenames db
 
-# Map of local folders corresponding to Repos (Git Organisations)
-declare -A repos=(
-	["8b"]="$HOME/enova/teams/jarvis/8b"
-	["ed"]="$HOME/enova/teams/jarvis/enovadecisions"
-	["enovadecisions"]="$HOME/enova/teams/jarvis/enovadecisions"
-	["gems"]="$HOME/enova/teams/jarvis/gems"
-	["lambda-reports"]="$HOME/enova/teams/jarvis/lambda-reports"
-	["odi"]="$HOME/enova/teams/jarvis/odi"
-	["valkyries"]="$HOME/enova/teams/jarvis/valkyries"
-)
+if [ -z $repos ]; then
+	declare -A repos=(
+		["example"]="$HOME/example"
+	)
+fi
 
 # Takes you to the mapped local folder for the specified Repo (Git Organisation)
 repo() {
@@ -241,22 +251,11 @@ _repo() {
 
 complete -F _repo -o filenames repo
 
-# Map of local folders corresponding to Projects (Git Repositories)
-declare -A projects=(
-	["8b"]="enova/teams/jarvis/8b/8b"
-	["cra"]="enova/teams/jarvis/enovadecisions/cra"
-	["flow_scripts"]="enova/teams/jarvis/valkyries/flow_scripts"
-	["identity"]="enova/teams/jarvis/8b/8b/apps/identity"
-	["identity_overlays"]="enova/teams/jarvis/8b/identity_overlays"
-	["identity_staging_tests"]="enova/teams/jarvis/8b/identity_staging_tests"
-	["lambda-reports"]="enova/teams/jarvis/lambda-reports"
-	["moriarty"]="enova/teams/jarvis/8b/8b/apps/moriarty"
-	["odi"]="enova/teams/jarvis/odi/odi"
-	["pipeline"]="enova/teams/jarvis/dev/pipeline"
-	["sherlock"]="enova/teams/jarvis/gems/sherlock"
-	["transform-lookup"]="enova/teams/jarvis/odi/transform-lookup"
-	["transform_lookup_staging_tests"]="enova/teams/jarvis/odi/transform_lookup_staging_tests"
-)
+if [ -z $projects ]; then
+	declare -A projects=(
+		["example"]="$HOME/example"
+	)
+fi
 
 # Takes you to the mapped local folder for the specified Project (Git Repository)
 project() {
@@ -294,6 +293,15 @@ cucumber_verbose() {
 
 rspec_verbose() {
 	be rspec $1 --format documentation
+}
+
+git_stash() {
+	git stash push -m "$1"
+}
+
+git_unstash() {
+	stash_id=$(git stash list | grep "$1" | gsed -rn 's/^(stash\@\{[[:digit:]]\}).*/\1/p')
+	git stash pop "$stash_id"
 }
 
 is_git_repo() {
@@ -426,3 +434,6 @@ export SSL_CERT_FILE=/usr/local/etc/openssl/cert.pem
 
 # From https://stackoverflow.com/a/40372831/771948
 # export SSL_CERT_FILE=/usr/local/etc/openssl/cacert.pem
+
+# Homebrew complained at me, so here:
+export PATH="/usr/local/sbin:$PATH"
