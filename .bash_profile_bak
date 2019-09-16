@@ -185,7 +185,7 @@ gem_pristine() {
 	done
 }
 
-if [ -z $dbs ]; then
+if [ -v dbs[@] ]; then
 	declare -A dbs=(
 		["example"]="psql -h <db_server_address> -d <db_name> -p <port> -U <username> -W"
 	)
@@ -217,7 +217,7 @@ _db() {
 
 complete -F _db -o filenames db
 
-if [ -z $repos ]; then
+if [ -v repos[@] ]; then
 	declare -A repos=(
 		["example"]="$HOME/example"
 	)
@@ -251,7 +251,7 @@ _repo() {
 
 complete -F _repo -o filenames repo
 
-if [ -z $projects ]; then
+if [ -v projects[@] ]; then
 	declare -A projects=(
 		["example"]="$HOME/example"
 	)
