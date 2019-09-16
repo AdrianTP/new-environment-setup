@@ -185,11 +185,9 @@ gem_pristine() {
 	done
 }
 
-if [ -v dbs[@] ]; then
-	declare -A dbs=(
-		["example"]="psql -h <db_server_address> -d <db_name> -p <port> -U <username> -W"
-	)
-fi
+[[ -v dbs[@] ]] || declare -A dbs=(
+	["example"]="psql -h <db_server_address> -d <db_name> -p <port> -U <username> -W"
+)
 
 db() {
 	if [ -v "dbs[$1]" ]; then
@@ -217,11 +215,9 @@ _db() {
 
 complete -F _db -o filenames db
 
-if [ -v repos[@] ]; then
-	declare -A repos=(
-		["example"]="$HOME/example"
-	)
-fi
+[[ -v repos[@] ]] || declare -A repos=(
+	["example"]="$HOME/example"
+)
 
 # Takes you to the mapped local folder for the specified Repo (Git Organisation)
 repo() {
@@ -251,11 +247,9 @@ _repo() {
 
 complete -F _repo -o filenames repo
 
-if [ -v projects[@] ]; then
-	declare -A projects=(
-		["example"]="$HOME/example"
-	)
-fi
+[[ -v projects[@] ]] || declare -A projects=(
+	["example"]="$HOME/example"
+)
 
 # Takes you to the mapped local folder for the specified Project (Git Repository)
 project() {
