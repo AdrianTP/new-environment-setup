@@ -126,6 +126,9 @@ Plug 'antlypls/vim-colors-codeschool'
 Plug 'w0ng/vim-hybrid'
 Plug 'cocopon/iceberg.vim'
 
+" DIFF
+Plug 'rickhowe/diffchar.vim'
+
 "*****************************************************************************
 "" Custom bundles
 "*****************************************************************************
@@ -532,6 +535,7 @@ nnoremap <Leader>o :.Gbrowse<CR>
 autocmd FileType c setlocal tabstop=4 shiftwidth=4 expandtab
 autocmd FileType cpp setlocal tabstop=4 shiftwidth=4 expandtab
 
+" Language: Golang
 
 " go
 let g:tagbar_type_go = {
@@ -560,7 +564,7 @@ endfunction
 let g:go_list_type = "quickfix"
 let g:go_fmt_command = "goimports"
 let g:go_fmt_fail_silently = 1
-let g:syntastic_go_checkers = ['golint', 'govet']
+let g:syntastic_go_checkers = ['go', 'golint', 'govet', 'errcheck']
 let g:syntastic_mode_map = { 'mode': 'active', 'passive_filetypes': ['go'] }
 
 let g:go_highlight_types = 1
@@ -573,9 +577,71 @@ let g:go_highlight_generate_tags = 1
 let g:go_highlight_space_tab_error = 0
 let g:go_highlight_array_whitespace_error = 0
 let g:go_highlight_trailing_whitespace_error = 0
-let g:go_highlight_extra_types = 0
+let g:go_highlight_extra_types = 1
+let g:go_highlight_structs = 1
+
+" Show the progress when running :GoCoverage
+let g:go_echo_command_info = 1
+
+" Show type information
+let g:go_auto_type_info = 1
+
+" Highlight variable uses
+let g:go_auto_sameids = 1
+
+" Fix for location list when vim-go is used together with Syntastic
+let g:go_list_type = "quickfix"
+
+" Add the failing test name to the output of :GoTest
+let g:go_test_show_name = 1
+
+" Disable fmt on save
+let g:go_fmt_autosave = 0
+
+" " gometalinter configuration
+" let g:go_metalinter_command = ""
+" let g:go_metalinter_deadline = "5s"
+" let g:go_metalinter_enabled = [
+"     \ 'deadcode',
+"     \ 'gas',
+"     \ 'goconst',
+"     \ 'gocyclo',
+"     \ 'golint',
+"     \ 'gosimple',
+"     \ 'ineffassign',
+"     \ 'vet',
+"     \ 'vetshadow'
+" \]
+
+" Set whether the JSON tags should be snakecase or camelcase.
+let g:go_addtags_transform = "snakecase"
+
+" " neomake configuration for Go.
+" let g:neomake_go_enabled_makers = [ 'go', 'gometalinter' ]
+" let g:neomake_go_gometalinter_maker = {
+"   \ 'args': [
+"   \   '--tests',
+"   \   '--enable-gc',
+"   \   '--concurrency=3',
+"   \   '--fast',
+"   \   '-D', 'aligncheck',
+"   \   '-D', 'dupl',
+"   \   '-D', 'gocyclo',
+"   \   '-D', 'gotype',
+"   \   '-E', 'misspell',
+"   \   '-E', 'unused',
+"   \   '%:p:h',
+"   \ ],
+"   \ 'append_file': 0,
+"   \ 'errorformat':
+"   \   '%E%f:%l:%c:%trror: %m,' .
+"   \   '%W%f:%l:%c:%tarning: %m,' .
+"   \   '%E%f:%l::%trror: %m,' .
+"   \   '%W%f:%l::%tarning: %m'
+"   \ }
 
 autocmd BufNewFile,BufRead *.go setlocal noexpandtab tabstop=4 shiftwidth=4
+" autocmd BufWritePre *.go call go#lint#Run() " MANY ERRORS
 
 augroup completion_preview_close
   autocmd!
@@ -584,9 +650,16 @@ augroup completion_preview_close
   endif
 augroup END
 
-augroup go
+augroup golang
 
   au!
+
+  au FileType go set noexpandtab
+  au FileType go set shiftwidth=2
+  au FileType go set softtabstop=2
+  au FileType go set tabstop=2
+
+" Mappings
   au Filetype go command! -bang A call go#alternate#Switch(<bang>0, 'edit')
   au Filetype go command! -bang AV call go#alternate#Switch(<bang>0, 'vsplit')
   au Filetype go command! -bang AS call go#alternate#Switch(<bang>0, 'split')
@@ -598,15 +671,35 @@ augroup go
 
   au FileType go nmap <leader>r  <Plug>(go-run)
   au FileType go nmap <leader>t  <Plug>(go-test)
-  au FileType go nmap <Leader>gt <Plug>(go-coverage-toggle)
+  " au FileType go nmap <Leader>gt <Plug>(go-coverage-toggle)
   au FileType go nmap <Leader>i <Plug>(go-info)
   au FileType go nmap <silent> <Leader>l <Plug>(go-metalinter)
   au FileType go nmap <C-g> :GoDecls<cr>
   au FileType go imap <C-g> <esc>:<C-u>GoDecls<cr>
   au FileType go nmap <leader>rb :<C-u>call <SID>build_go_files()<CR>
 
+  au FileType go nmap <F8> :GoMetaLinter<cr>
+  au FileType go nmap <F9> :GoCoverageToggle -short<cr>
+  au FileType go nmap <F10> :GoTest -short<cr>
+  au FileType go nmap <F12> <Plug>(go-def)
+  au Filetype go nmap <leader>ga <Plug>(go-alternate-edit)
+  au Filetype go nmap <leader>gah <Plug>(go-alternate-split)
+  au Filetype go nmap <leader>gav <Plug>(go-alternate-vertical)
+  au FileType go nmap <leader>gt :GoDeclsDir<cr>
+  au FileType go nmap <leader>gc <Plug>(go-coverage-toggle)
+  au FileType go nmap <leader>gd <Plug>(go-def)
+  au FileType go nmap <leader>gdv <Plug>(go-def-vertical)
+  au FileType go nmap <leader>gdh <Plug>(go-def-split)
+  au FileType go nmap <leader>gD <Plug>(go-doc)
+  au FileType go nmap <leader>gDv <Plug>(go-doc-vertical)
+
 augroup END
 
+
+" bash
+" for bash files, tabs
+autocmd Filetype sh setlocal ts=2 sw=2 noexpandtab
+let g:syntastic_sh_checkers = ['ShellCheck']
 
 " html
 " for html files, 2 spaces
@@ -632,12 +725,40 @@ augroup END
 
 
 " python
+
+" 2019-11-27 - adding functions to switch between normal and google python
+" conventions
+" pass 1 to return the command string
+" pass 0 (or nothing) to execute the command string immediately (to reduce
+" repetition for use in init script vs :call PyGoogle() from within vim itself
+function PyGoogle(...)
+  let cmd = 'setlocal expandtab shiftwidth=2 tabstop=2 colorcolumn=79
+      \ formatoptions+=croq softtabstop=2
+      \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with'
+
+  if get(a:, 1, 0) == 1
+    return cmd
+  else
+    execute cmd
+  endif
+endfunction
+
+function PyStandard(...)
+  let cmd = 'setlocal expandtab shiftwidth=4 tabstop=8 colorcolumn=79
+      \ formatoptions+=croq softtabstop=4
+      \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with'
+
+  if get(a:, 1, 0) == 1
+    return cmd
+  else
+    execute cmd
+  endif
+endfunction
+
 " vim-python
 augroup vimrc-python
   autocmd!
-  autocmd FileType python setlocal expandtab shiftwidth=4 tabstop=8 colorcolumn=79
-      \ formatoptions+=croq softtabstop=4
-      \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with
+  execute 'autocmd FileType python' . PyStandard(1)
 augroup END
 
 " jedi-vim
@@ -653,6 +774,22 @@ let g:jedi#smart_auto_mappings = 0
 
 " syntastic
 let g:syntastic_python_checkers=['python', 'flake8']
+" OLD force syntastic to use python3 because i have both on my system, but i only
+" use python 3
+" let g:syntastic_python_python_exec = '/usr/local/bin/python3'
+" let g:syntastic_python_python_exec = '/usr/local/bin/python'
+
+" 2019-11-27 - enable syntastic python version switching in vim
+" https://stackoverflow.com/a/43125342/771948
+function Py2()
+  let g:syntastic_python_python_exec = '/usr/local/bin/python'
+endfunction
+
+function Py3()
+  let g:syntastic_python_python_exec = '/usr/local/bin/python3'
+endfunction
+
+call Py3()   " default to Py3 because I try to use it when possible
 
 " vim-airline
 let g:airline#extensions#virtualenv#enabled = 1
@@ -775,5 +912,29 @@ set splitright
 set ruler
 set colorcolumn=81
 
-" disable fmt on save
-let g:go_fmt_autosave = 0
+" MAKE TABS AND SPACES VISIBLE
+set list
+set listchars=eol:¬,tab:▸\ 
+
+" ...
+
+" ALE GO LINTING
+" " Error and warning signs.
+" let g:ale_sign_error = '⤫'
+" let g:ale_sign_warning = '⚠'
+" " Enable integration with airline.
+" let g:airline#extensions#ale#enabled = 1
+
+" DEOPLETE GO AUTOCOMPLETE
+" if has('nvim')
+"   " Enable deoplete on startup
+"   let g:deoplete#enable_at_startup = 1
+" endif
+
+" " Disable deoplete when in multi cursor mode
+" function! Multiple_cursors_before()
+"   let b:deoplete_disable_auto_complete = 1
+" endfunction
+" function! Multiple_cursors_after()
+"   let b:deoplete_disable_auto_complete = 0
+" endfunction
