@@ -3,4 +3,12 @@
 - [ ] general cleanup and refactoring
 - [ ] finish utils/key-fingerprint
 - [ ] figure out Brewfile situation
-
+- [ ] decide:
+  - [ ] maintain separate profile files for each environment?
+  - [ ] assemble them in a buildfrom a series of sub-files?
+    - [ ] setup.sh creates a build folder if not exist
+    - [ ] build folder is in .gitignore
+    - [ ] original profile and config files are renamed and built files are
+          symlinked in their place
+    - [ ] con: this approach would require re-building each time a change is made
+  - [ ] `source <sub-file>` added to live `~/.bash_profile` for each sub-file

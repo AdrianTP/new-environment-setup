@@ -1,0 +1,1 @@
+- [ ] neovim.vim needs to be symlinked into ~/.config/nvim/init.vim

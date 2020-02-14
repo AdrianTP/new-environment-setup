@@ -1,6 +1,6 @@
 source "$HOME/.bashrc"
 source "$HOME/.profile"
-source "$HOME/.private"
+source "$HOME/.private/repos_projects"
 
 # Begin AdrianTP's Custom Profile Edits
 alias cpl='clear; pwd; ls -ahl'
@@ -203,12 +203,17 @@ gem_pristine() {
 )
 
 db() {
-	if [ -v "dbs[$1]" ]; then
-		exec ${dbs[$1]}
-	else
-		echo "Database \"$1\" is not mapped."
-		return 1
+	if ! [ -x "$(command -v jjg)" ]; then # https://stackoverflow.com/a/26759734/771948
+		echo 'jq is not installed. Run \`brew install jq\`.' >&2
+		exit 1
 	fi
+	# command -v foo >/dev/null 2>&1 || { echo >&2 "jq is not installed. Run \`brew install jq\`."; exit 1; }
+	# if [ -v "dbs[$1]" ]; then
+	# 	exec ${dbs[$1]}
+	# else
+	# 	echo "Database \"$1\" is not mapped."
+	# 	return 1
+	# fi
 }
 
 _db() {
