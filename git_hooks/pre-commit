@@ -22,65 +22,8 @@ confirm() {
 	esac
 }
 
-# If GIT_SKIP_PRE is set, exit immediately and advise the user
-# Set this variable to skip these pre-commit checks
-if [ -n "$GIT_SKIP_PRE" ]; then
-	printf "\n\`GIT_SKIP_PRE\` is set; skipping pre-commit script. Run"
-	printf " \`unset GIT_SKIP_PRE\` to resume pre-commit checks.\n"
-	exit 0
-fi
-
-# If .git-skip exists in the repository, delete it and exit immediately
-# Create this file within a repository to skip these pre-commit checks just once
-# If the file is tracked by the master branch, then it will leave the file alone
-#   and skip the checks
-# If the file is tracked only by the current branch, then it will ask whether
-#   that was intentional before continuing and skipping the checks
-# If the file is untracked, it will delete the file, then skip the checks
-if [ -f .git-skip ]; then
-	printf "\nDetected \`.git-skip\` file."
-	list_master=$(git ls-tree -r master --name-only)
-	list_current=$(git ls-files)
-	match_master=$(grep ".git-skip" <<< "$list_master")
-	match_current=$(grep ".git-skip" <<< "$list_current")
-	if [ -n "$match_master" ]; then
-		printf " Skipping pre-commit checks."
-		printf "\n\nNOTE: The file is tracked by the master branch of this repository."
-		printf " Remove this file from the master branch in order to resume"
-		printf " pre-commit checks.\n\n"
-		exit 0
-	elif [ -n "$match_current" ]; then
-		printf " The file is tracked by the current branch of this repository. This"
-		printf " is most likely a mistake.\n"
-		exec < /dev/tty
-		if confirm "Are you sure you want to commit the \`.git-skip\` file? [y/N]"; then
-			cat <<-SKIP
-				Received an affirmative response.
-				Skipping pre-commit checks and committing the \`.git-skip\` file.
-
-			SKIP
-			exec <&-
-			exit 0
-		else
-			cat <<-SKIP
-				Received a negative response.
-				Please unstage the file with \`git reset HEAD .git-skip\` and try again.
-
-			SKIP
-			exec <&-
-			exit 1
-		fi
-	else
-		printf " Skipping pre-commit checks and deleting the \`.git-skip\` file."
-		printf " Run \`touch .git-skip\` to re-enable skipping pre-commit checks for"
-		printf " a single run.\n\n"
-		rm .git-skip
-		exit 0
-	fi
-else
-	printf " You can skip these pre-commit checks one time by running"
-	printf " \`touch .git-skip\` within this repository."
-fi
+echo "Running pre-commit checks..."
+printf "\nTo skip these checks, add the \`--no-verify\` when you run \`git commit\`.\n"
 
 # Gathers all staged golang files
 echo "Gathering all changed golang files..."
@@ -92,7 +35,7 @@ fi
 
 # Runs golang tests and halts if any tests fail
 printf "\nRunning \`go test ./...\`\n"
-tests=$(go test ./... 2>&1)
+tests=$(go test -count=1 ./... 2>&1)
 if [[ "$tests" == *"FAIL"* ]]; then
 	echo >&2 "Tests failed:"
 	echo "$tests"

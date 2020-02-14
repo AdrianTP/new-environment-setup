@@ -7,6 +7,7 @@ alias cpl='clear; pwd; ls -ahl'
 alias cplg='cpl; git status'
 alias pbp='pbpaste'
 alias pbc='pbcopy'
+alias duptab='open . -a iterm'
 #PS1=\u\$
 alias dockspace='~/dockspace.sh'
 alias be='bundle exec'
@@ -58,10 +59,12 @@ alias gobjdump="/usr/local/Cellar/binutils/2.32/bin/objdump"
 alias sleep_disable="sudo pmset -a sleep 0; sudo pmset -a hibernatemode 0; sudo pmset -a disablesleep 1;"
 alias sleep_enable="sudo pmset -a sleep 1; sudo pmset -a hibernatemode 3; sudo pmset -a disablesleep 0;"
 
-# Enova-speciic stuff
+# Enova-specific stuff
 alias pipeline="$HOME/enova/teams/jarvis/dev/pipeline/pipeline"
 # alias nconjure="$HOME/enova/teams/jarvis/netcredit/nconjure/bin/nconjure"
 alias traps_stop="/Library/Application Support/PaloAltoNetworks/Traps/bin/cytool runtime stop all"
+
+alias big_files="du -k * | awk '\$1 > 500000' | sort -nr"
 
 # Change owner of all files belonging to a user/group
 # sudo find . -user old_user -group old_group -exec chown new_user:new_group "{}" \;
@@ -120,7 +123,16 @@ chbundlerfix() {
 	done
 }
 
+bundlerfix() {
+	# taken from https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html
+	gem install bundler -v "$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1)"
+}
+
 redoby() {
+	# FIXME: currently broken, do not use
+	echo "this is currently broken, sorry"
+	return 1
+
 	# inspired by https://gist.github.com/yannvery/b1cf1a7b11ac84e798a5
 	# one or two args
 	# custom dir, soft: redoby <dir>
@@ -150,6 +162,7 @@ redoby() {
 
 	echo "4 $target_dir-bak"
 	# backup directory
+	# TODO: figure out how to make this work
 	# cp -r "$target_dir" "$target_dir-bak"
 
 	echo "5"
@@ -378,6 +391,10 @@ mkcd() {
 	mkdir -p "$@"
 	echo "made dirs, switching to $@"
 	builtin cd "$@"
+}
+
+go_test() {
+	go test -count=1 -v ./...
 }
 
 # cd {
