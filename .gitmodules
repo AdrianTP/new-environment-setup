@@ -1,0 +1,3 @@
+[submodule "testing-private-submodules"]
+	path = testing-private-submodules
+	url = https://github.com/AdrianTP/testing-private-submodules
