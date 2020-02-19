@@ -152,7 +152,6 @@ atp_project_do() {
 		atp_project_delete "$2"
 		;;
 	*) # open the project directory
-		echo "go"
 		[ -z "$1" ] && echo "$ATP_PROJECT_USAGE" && return 0
 		atp_project_go "$1"
 		;;
