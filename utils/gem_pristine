@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+versions=$(chruby)
+rubies_dir="$HOME/.rubies"
+
+for r in $rubies_dir/*; do
+	ruby_path=$(greadlink -f "$r")
+	ruby_version=$(basename "$ruby_path" | cut -d'-' -f 2)
+
+	echo "running 'gem pristine --all' on ruby $ruby_version"
+
+	chruby $ruby_version && gem pristine --all
+done

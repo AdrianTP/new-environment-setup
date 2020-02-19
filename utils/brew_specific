@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# install a specific version of an app from Homebrew
+
+USAGE="Usage:
+  brew_specific [name] [version]
+    Downloads and installs the specified version of the named dependency via Homebrew and Git"
+
+setup() {
+	# Prevent Homebrew from automatically updating
+	OLD_HBNAU="$HOMEBREW_NO_AUTO_UPDATE"
+	export HOMEBREW_NO_AUTO_UPDATE=1
+}
+
+cleanup() {
+	export HOMEBREW_NO_AUTO_UPDATE="$OLD_HBNAU"
+}
+
+install() {
+	DIR="$(pwd)"
+	REPO="$(brew --repo homebrew/core)"
+	LOG_GREP="$1 $2"
+
+	cd "$REPO" || return 1
+
+	git checkout master
+
+	LOG=$(git --no-pager log -n 20 master --pretty=oneline --grep="$LOG_GREP")
+	HASH=$(echo "$LOG" | gsed -rn 's/^([0-9a-fA-F]{8,40}).*/\1/p')
+	git checkout "$HASH"
+
+	brew install "$1"
+
+	git checkout master
+
+	cd "$DIR" || return 1
+}
+
+if ! [ -x "$(command -v git)" ]; then
+	echo 'Git is not installed. Please install Git to continue.' >&2
+	exit 1
+elif ! [ -x "$(command -v brew)" ]; then
+	echo 'Homebrew is not installed. Please install Homebrew to continue.' >&2
+	exit 1
+elif [ $# -ne 2 ]; then
+	echo "$USAGE"
+else
+	install "$1" "$2"
+fi
+
+exit $?

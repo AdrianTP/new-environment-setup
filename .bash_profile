@@ -81,221 +81,85 @@ fi
 # iTermocil Autocomplete
 complete -W "$(itermocil --list)" itermocil
 
-# # Prevent Homebrew from automatically updating
-# export HOMEBREW_NO_AUTO_UPDATE=1
+#
+# Custom Utils
+#
 
-# install a specific version of an app from Homebrew
-# usage: brew_install_version <name> <version>
-brew_install_version() {
-	DIR="$(pwd)"
-	REPO="$(brew --repo homebrew/core)"
-	LOG_GREP="$1 $2"
+export PATH="$PATH:~/personal/new-environment-setup/utils"
 
-	cd $REPO
+complete -W "$(db -l)" db
+# complete -W "$(repo -l)" repo
 
-	git checkout master
-	LOG=$(git --no-pager log -n 20 master --pretty=oneline --grep="$LOG_GREP")
-
-	HASH=$(echo $LOG | gsed -rn 's/^([0-9a-fA-F]{8,40}).*/\1/p')
-
-	git checkout $HASH
-
-	export HOMEBREW_NO_AUTO_UPDATE=1
-
-	brew install $1
-
-	git checkout master
-
-	unset HOMEBREW_NO_AUTO_UPDATE
-
-	cd $DIR
-}
-
-chredoby() {
-	redoby "$HOME/.rubies" $1
-}
-
-chbundlerfix() {
-	for d in $HOME/.rubies/*; do
-		ruby_version=$(basename $d)
-		echo "Installing bundler 1.17.3 for $ruby_version..."
-		chruby $ruby_version; gem install bundler -v '1.17.3';
-	done
-}
-
-bundlerfix() {
-	# taken from https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html
-	gem install bundler -v "$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1)"
-}
-
-redoby() {
-	# FIXME: currently broken, do not use
-	echo "this is currently broken, sorry"
-	return 1
-
-	# inspired by https://gist.github.com/yannvery/b1cf1a7b11ac84e798a5
-	# one or two args
-	# custom dir, soft: redoby <dir>
-	# custom dir, hard: redoby <dir> hard
-
-	read -r -d '' usage <<-'USAGE'
-		Usage:
-		  Soft mode (just reinstalls):
-		    redoby <rubies_directory>
-		  Hard mode (deletes rubies before reinstall):
-		    redoby <rubies_directory> hard
-	USAGE
-
-	echo "1 $#"
-
-	if [[ "$#" -eq 0 ]]; then echo $usage; return 1; fi
-
-	target_dir=$(cd "${1/#\~/$HOME}"; pwd)
-
-	echo "2"
-
-	[[ -z "$1" ]] && echo "path must not be blank";
-
-	echo "3"
-
-	[[ -d $target_dir ]] || return 1
-
-	echo "4 $target_dir-bak"
-	# backup directory
-	# TODO: figure out how to make this work
-	# cp -r "$target_dir" "$target_dir-bak"
-
-	echo "5"
-	# iterate versions
-	for r in $target_dir/*; do
-		echo "6 $r"
-		ruby_path=$(greadlink -f "$r")
-		ruby_version=$(basename "$ruby_path" | cut -d'-' -f 2)
-
-		echo "7 $ruby_path"
-		# if hard_mode, delete dir
-		[[ $2 = 'hard' ]] && echo "rm -rf $ruby_path"
-
-		# install ruby
-		ruby-build "$ruby_version" "$target_dir/ruby-$ruby_version"
-	done
-
-	echo "Done."
-	# echo "Be sure to delete $target_dir-bak once you're sure everything is working."
-}
-
-gem_pristine() {
-	versions=$(chruby)
-	rubies_dir="$HOME/.rubies"
-
-	for r in $rubies_dir/*; do
-		ruby_path=$(greadlink -f "$r")
-		ruby_version=$(basename "$ruby_path" | cut -d'-' -f 2)
-
-		echo "running 'gem pristine --all' on ruby $ruby_version"
-
-		chruby $ruby_version && gem pristine --all
-	done
-}
-
-[[ -v dbs[@] ]] || declare -A dbs=(
-	["example"]="psql -h <db_server_address> -d <db_name> -p <port> -U <username> -W"
-)
-
-db() {
-	if ! [ -x "$(command -v jjg)" ]; then # https://stackoverflow.com/a/26759734/771948
-		echo 'jq is not installed. Run \`brew install jq\`.' >&2
-		exit 1
-	fi
-	# command -v foo >/dev/null 2>&1 || { echo >&2 "jq is not installed. Run \`brew install jq\`."; exit 1; }
-	# if [ -v "dbs[$1]" ]; then
-	# 	exec ${dbs[$1]}
-	# else
-	# 	echo "Database \"$1\" is not mapped."
-	# 	return 1
-	# fi
-}
-
-_db() {
-	local cur
-	local options
-
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	options=$(join_by ' ' "${!dbs[@]}")
-
-	case "$cur" in
-		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
-	esac
-
-	return 0
-}
-
-complete -F _db -o filenames db
-
-[[ -v repos[@] ]] || declare -A repos=(
-	["example"]="$HOME/example"
-)
-
-# Takes you to the mapped local folder for the specified Repo (Git Organisation)
-repo() {
-	if [ -v "repos[$1]" ]; then
-		cd "${repos[$1]}"
-	else
-		echo "Repo \"$1\" is not mapped."
-		return 1
-	fi
-}
-
-# Enables suggestions in the terminal for the `repo` command
-_repo() {
-	local cur
-	local options
-
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	options=$(join_by ' ' "${!repos[@]}")
-
-	case "$cur" in
-		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
-	esac
-
-	return 0
-}
-
-complete -F _repo -o filenames repo
-
-[[ -v projects[@] ]] || declare -A projects=(
-	["example"]="$HOME/example"
-)
-
-# Takes you to the mapped local folder for the specified Project (Git Repository)
 project() {
-	if [ -v "projects[$1]" ]; then
-		cd "$HOME/${projects[$1]}"
-	else
-		echo "Project \"$1\" is not mapped."
-		return 1
-	fi
+	source "project.sh"
+	atp_project_do "$@"
 }
 
-# Enables suggestions in the terminal for the `project` command
-_project() {
-	local cur
-	local options
+complete -W "$(project -l)" project # TODO: figure out how to refresh autocomplete without using daemon
 
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	options=$(join_by ' ' "${!projects[@]}")
+# [[ -v repos[@] ]] || declare -A repos=(
+# 	["example"]="$HOME/example"
+# )
 
-	case "$cur" in
-		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
-	esac
+# # Takes you to the mapped local folder for the specified Repo (Git Organisation)
+# repo() {
+# 	if [ -v "repos[$1]" ]; then
+# 		cd "${repos[$1]}"
+# 	else
+# 		echo "Repo \"$1\" is not mapped."
+# 		return 1
+# 	fi
+# }
 
-	return 0
-}
+# # Enables suggestions in the terminal for the `repo` command
+# _repo() {
+# 	local cur
+# 	local options
 
-complete -F _project -o filenames project
+# 	COMPREPLY=()
+# 	cur=${COMP_WORDS[COMP_CWORD]}
+# 	options=$(join_by ' ' "${!repos[@]}")
+
+# 	case "$cur" in
+# 		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
+# 	esac
+
+# 	return 0
+# }
+
+# complete -F _repo -o filenames repo
+
+# [[ -v projects[@] ]] || declare -A projects=(
+# 	["example"]="$HOME/example"
+# )
+
+# # Takes you to the mapped local folder for the specified Project (Git Repository)
+# project() {
+# 	if [ -v "projects[$1]" ]; then
+# 		cd "$HOME/${projects[$1]}"
+# 	else
+# 		echo "Project \"$1\" is not mapped."
+# 		return 1
+# 	fi
+# }
+
+# # Enables suggestions in the terminal for the `project` command
+# _project() {
+# 	local cur
+# 	local options
+
+# 	COMPREPLY=()
+# 	cur=${COMP_WORDS[COMP_CWORD]}
+# 	options=$(join_by ' ' "${!projects[@]}")
+
+# 	case "$cur" in
+# 		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
+# 	esac
+
+# 	return 0
+# }
+
+# complete -F _project -o filenames project
 
 join_by() { local IFS="$1"; shift; echo "$*"; }
 

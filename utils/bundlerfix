@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# fix bundler error
+
+USAGE="Usage:
+  bundlerfix [--chruby]
+  - Fix Bundler error
+  - --chruby flag (optional) fixes it for all rubies in \$HOME/.rubies"
+
+fix() {
+	# taken from https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html
+	gem install bundler -v "$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1)"
+}
+
+ch_fix() {
+	for d in "$HOME"/.rubies/*; do
+		ruby_version="$(basename "$d")"
+		echo "Installing bundler 1.17.3 for $ruby_version..."
+		chruby "$ruby_version" || exit 1
+		gem install bundler -v '1.17.3'
+	done
+}
+
+if [ $# -gt 1 ]; then
+	echo "$USAGE"
+	exit 1
+elif [ "$1" = "--chruby" ]; then
+	ch_fix
+else
+	fix
+fi

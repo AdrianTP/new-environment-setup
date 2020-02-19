@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+
+# Taken from https://stackoverflow.com/a/246128/771948
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+PROJECT_CONFIG_PARENT_DIR_PATH="$DIR/../.private"
+PROJECT_CONFIG_FILE_REALPATH="$(realpath "$PROJECT_CONFIG_PARENT_DIR_PATH/projects.json")"
+
+USAGE="Usage:
+  project <name>
+    cd to the directory mapped to the given name (tab completion available)
+  project -l
+    List all mapped projects
+  project -a
+    Add the current directory to the project list, named matching the current folder
+  project -a <relative/path>
+    Add the specified relative path to the project list, named matching the folder
+  project -a <relative/path> <name>
+    Add the specified relative path to the project list, mapped to the given name"
+
+QUERY='.projects.defaults * .projects.projects[$name]
+ | "cd \(.home)/\(.base)/teams/\(.team)/\(.org)/\(.path)/"'
+
+list() {
+	jq -r '.projects.projects | keys[]' "$PROJECT_CONFIG_FILE_REALPATH"
+	return "$?"
+}
+
+update() {
+	if [ -f "$PROJECT_CONFIG_FILE_REALPATH.tmp" ]; then
+		mv "$PROJECT_CONFIG_FILE_REALPATH" "$PROJECT_CONFIG_FILE_REALPATH.bak" && mv "$PROJECT_CONFIG_FILE_REALPATH.tmp" "$PROJECT_CONFIG_FILE_REALPATH"
+	fi
+
+	# TODO: figure out how to refresh the autocompletion (without using the daemon)
+	# names="$(list)"
+	# complete -W "$names" project
+
+	return "$?"
+}
+
+add() {
+	# shellcheck disable=SC2016
+	query='.projects.projects[$name]={ org: $org, path: $path }'
+	fullpath="$(pwd)"
+	name="$(basename $fullpath)"
+
+	config_has_project="$(jq -r --arg name "$name" '.projects.projects | has($name)' "$PROJECT_CONFIG_FILE_REALPATH")"
+
+	if [ "$config_has_project" = "true" ]; then
+		echo "Project \"$name\" is already mapped!"
+		return 0
+	fi
+
+	# use current directory and folder name if no args
+	if ! [ -z "$1" ]; then # path, use folder name
+		fullpath="$(realpath "$1")"
+		if ! [ -z "$2" ]; then # path, name
+			name="$(basename "$2")"
+		fi
+	fi
+
+	home="$(jq -r '.projects.defaults.home' "$PROJECT_CONFIG_FILE_REALPATH")"
+	base="$(jq -r '.projects.defaults.base' "$PROJECT_CONFIG_FILE_REALPATH")"
+	team="$(jq -r '.projects.defaults.team' "$PROJECT_CONFIG_FILE_REALPATH")"
+	root="$home/$base/teams/$team/"
+	org="$(cut -d'/' -f1 <<< "${fullpath/$root/}")"
+	root+="$org/"
+	path=${fullpath/$root/}
+
+	echo "Mapping $fullpath to \"$name\""
+	jq -e --arg name "$name" --arg org "$org" --arg path "$path" "$query" "$PROJECT_CONFIG_FILE_REALPATH" > "$PROJECT_CONFIG_FILE_REALPATH.tmp"
+
+	update
+
+	return "$?"
+}
+
+delete() {
+	echo "Deleting \"$1\""
+	jq -e --arg name "$1" 'del(.projects.projects[$name])' "$PROJECT_CONFIG_FILE_REALPATH" > "$PROJECT_CONFIG_FILE_REALPATH.tmp"
+
+	update
+
+	return "$?"
+}
+
+go() {
+	config_has_project="$(jq -r --arg name "$1" '.projects.projects | has($name)' "$PROJECT_CONFIG_FILE_REALPATH")"
+
+	if [ "$config_has_project" != "true" ]; then
+		echo "Project \"$1\" is not mapped."
+		return 1
+	else
+		cmd="$(jq -r --arg name "$1" "$QUERY" "$PROJECT_CONFIG_FILE_REALPATH")"
+		$cmd
+		return 0
+	fi
+}
+
+# App entry point
+if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
+	echo 'jq is not installed. Run `brew install jq`.' >&2
+	exit 1
+elif [ ! -f "$PROJECT_CONFIG_FILE_REALPATH" ]; then
+	echo "projects.json file does not exist"
+	echo "creating file at $PROJECT_CONFIG_FILE_REALPATH"
+	mkdir -p "$PROJECT_CONFIG_PARENT_DIR_PATH"
+	cat <<-JSON > "$PROJECT_CONFIG_FILE_REALPATH"
+	{
+	  "projects": {}
+	}
+	JSON
+	exit 0
+elif [ $# -eq 0 ] || [ $# -gt 3 ]; then
+	echo "$USAGE"
+	exit 0
+elif [ "$1" = "-l" ] && [ $# -gt 1 ]; then
+	echo "$USAGE"
+	exit 0
+elif [ "$1" = "-l" ]; then
+	list
+elif [ "$1" = "-a" ]; then
+	add "$2" "$3"
+elif [ "$1" = "-d" ] && ! [ $# -eq 2 ]; then
+	echo "$USAGE"
+	exit 0
+elif [ "$1" = "-d" ] && ! [ -z "$2" ]; then
+	delete "$2"
+else
+	go "$1"
+fi
+
+exit $?

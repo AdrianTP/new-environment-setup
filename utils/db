@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# Taken from https://stackoverflow.com/a/246128/771948
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+DB_CONFIG_PARENT_DIR_PATH="$DIR/../.private"
+DB_CONFIG_FILE_REALPATH="$(realpath "$DB_CONFIG_PARENT_DIR_PATH/databases.json")"
+
+USAGE="Usage:
+  db [name]
+    Connects to the specified database, if it exists
+  db [-l]
+    List all mapped database names"
+
+# shellcheck disable=SC2016
+QUERY='(.defaults * .databases[$TARGET]) as $d | $d
+ | ("psql -h \(.host) -d \(.database) -p \(.port) -U \(.user)") as $q
+ | if $d.prompt_password
+   then $q + " -W"
+   else $q
+ end'
+
+list() {
+	jq -r '.databases | keys[]' "$DB_CONFIG_FILE_REALPATH"
+	return "$?"
+}
+
+connect() {
+	config_has_database="$(jq -r --arg TARGET "$1" '.databases | has($TARGET)' "$DB_CONFIG_FILE_REALPATH")"
+
+	if ! [ "$config_has_database" = "true" ]; then
+		echo "Database \"$1\" is not mapped."
+		return 1
+	else
+		cmd="$(jq -r --arg TARGET "$1" "$QUERY" "$DB_CONFIG_FILE_REALPATH")"
+		echo "Executing $cmd"
+		$cmd
+		return 0
+	fi
+}
+
+# App entry point
+if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
+	echo 'jq is not installed. Run `brew install jq`.' >&2
+	exit 1
+elif [ ! -f "$DB_CONFIG_FILE_REALPATH" ]; then
+	echo "databases.json file does not exist"
+	echo "creating file at $DB_CONFIG_FILE_REALPATH"
+	mkdir -p "$DB_CONFIG_PARENT_DIR_PATH"
+	cat <<-JSON > "$DB_CONFIG_FILE_REALPATH"
+	{
+	  "defaults": {
+	    "prompt_password": true,
+	    "port": "5432"
+	  },
+	  "databases": {}
+	}
+	JSON
+elif [ $# -ne 1 ]; then
+	echo "$USAGE"
+elif [ "$1" = "-l" ]; then
+	list
+else
+	connect "$1"
+fi
+
+exit $?

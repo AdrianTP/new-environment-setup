@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+# reinstall all rubies
+
+# inspired by https://gist.github.com/yannvery/b1cf1a7b11ac84e798a5
+# one or two args
+# custom dir, soft: redoby <dir>
+# custom dir, hard: redoby <dir> hard
+
+USAGE="Usage:
+  redoby [--chruby|rubies_dir] [hard]
+    rubies_dir (required)
+    - specifies what directory to search within and install into
+    - may be replaced by the --chruby flag which specifies \$HOME/.rubies
+    hard (optional)
+    - if present: delete existing rubies before install
+    - the literal word 'hard' (without quotes)"
+
+install_dir=""
+backup_dir=""
+
+install() {
+	echo "Backing up to $backup_dir"
+	cp -r "$install_dir" "$backup_dir"
+
+	echo "Re-installing all Ruby versions in $install_dir"
+	for r in "$install_dir"/*; do
+		ruby_path=$(greadlink -f "$r")
+		ruby_version=$(basename "$ruby_path" | cut -d'-' -f 2)
+
+		echo "Installing Ruby $ruby_version at $ruby_path"
+		echo "#1: $1"
+		# if hard_mode, delete dir
+		[[ $1 = 'hard' ]] && echo "rm -rf $ruby_path"
+
+		# install ruby
+		cmd="ruby-build $ruby_version $install_dir/ruby-$ruby_version"
+		echo "Executing $cmd"
+		$cmd
+	done
+
+	echo "Done."
+	echo "Be sure to delete $backup_dir once you're sure everything is working."
+
+	return 0
+}
+
+if [ $# -eq 0 ] || [ $# -gt 2 ]; then
+	echo "$USAGE"
+	exit 1
+elif [ -z "$1" ]; then
+	echo "path must not be blank"
+	exit 1
+fi
+
+if [ "$1" = "--chruby" ]; then
+	install_dir="$HOME/.rubies"
+else
+	install_dir="$(cd "${1/#\~/$HOME}" || exit 1; pwd)"
+fi
+
+backup_dir="$install_dir-bak"
+
+if ! [ -d "$install_dir" ]; then
+	echo "target directory ($install_dir) is not a directory"
+	exit 1
+else
+	install "$2"
+fi
+
+exit $?
