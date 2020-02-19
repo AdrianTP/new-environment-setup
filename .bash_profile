@@ -129,38 +129,6 @@ complete -W "$(project -l)" project # TODO: figure out how to refresh autocomple
 
 # complete -F _repo -o filenames repo
 
-# [[ -v projects[@] ]] || declare -A projects=(
-# 	["example"]="$HOME/example"
-# )
-
-# # Takes you to the mapped local folder for the specified Project (Git Repository)
-# project() {
-# 	if [ -v "projects[$1]" ]; then
-# 		cd "$HOME/${projects[$1]}"
-# 	else
-# 		echo "Project \"$1\" is not mapped."
-# 		return 1
-# 	fi
-# }
-
-# # Enables suggestions in the terminal for the `project` command
-# _project() {
-# 	local cur
-# 	local options
-
-# 	COMPREPLY=()
-# 	cur=${COMP_WORDS[COMP_CWORD]}
-# 	options=$(join_by ' ' "${!projects[@]}")
-
-# 	case "$cur" in
-# 		*) COMPREPLY=( $( compgen -W "$options" -- $cur ) );;
-# 	esac
-
-# 	return 0
-# }
-
-# complete -F _project -o filenames project
-
 join_by() { local IFS="$1"; shift; echo "$*"; }
 
 cucumber_verbose() {
