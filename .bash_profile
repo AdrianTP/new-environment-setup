@@ -92,10 +92,10 @@ complete -W "$(db -l)" db
 
 project() {
 	source "project.sh"
-	atp_project_do "$@"
+	run "$@"
 }
 
-complete -W "$(project -l)" project # TODO: figure out how to refresh autocomplete without using daemon
+complete -W "$(project -l)" project
 
 # [[ -v repos[@] ]] || declare -A repos=(
 # 	["example"]="$HOME/example"
