@@ -88,7 +88,6 @@ complete -W "$(itermocil --list)" itermocil
 export PATH="$PATH:~/personal/new-environment-setup/utils"
 
 complete -W "$(db -l)" db
-# complete -W "$(repo -l)" repo
 
 project() {
 	source "project.sh"
@@ -96,6 +95,13 @@ project() {
 }
 
 complete -W "$(project -l)" project
+
+repo() {
+	source "repo.sh"
+	run "$@"
+}
+
+complete -W "$(repo -l)" repo
 
 # [[ -v repos[@] ]] || declare -A repos=(
 # 	["example"]="$HOME/example"
@@ -129,7 +135,7 @@ complete -W "$(project -l)" project
 
 # complete -F _repo -o filenames repo
 
-join_by() { local IFS="$1"; shift; echo "$*"; }
+# join_by() { local IFS="$1"; shift; echo "$*"; }
 
 cucumber_verbose() {
 	be cucumber $1 --format pretty --expand
