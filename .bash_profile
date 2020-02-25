@@ -96,12 +96,12 @@ project() {
 
 complete -W "$(project -l)" project
 
-repo() {
-	source "repo.sh"
-	run "$@"
-}
+# repo() {
+# 	source "repo.sh"
+# 	run "$@"
+# }
 
-complete -W "$(repo -l)" repo
+# complete -W "$(repo -l)" repo
 
 # [[ -v repos[@] ]] || declare -A repos=(
 # 	["example"]="$HOME/example"

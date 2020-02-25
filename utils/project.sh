@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 
 setup_env() {
-	ATP_PROJECT_OLD_CONFIG_PARENT_DIR_PATH="$CONFIG_PARENT_DIR_PATH"
-	ATP_PROJECT_OLD_CONFIG_FILE_REALPATH="$CONFIG_FILE_REALPATH"
-
-	CONFIG_PARENT_DIR_PATH="$(realpath "$HOME/.private")"
-	CONFIG_FILE_REALPATH="$(realpath "$CONFIG_PARENT_DIR_PATH/projects.json")"
+	local filename="projects.json"
+	ATP_PROJECT_CONFIG_PARENT_DIR_PATH="$(realpath "$HOME/.private")"
+	ATP_PROJECT_CONFIG_FILE_REALPATH="$(realpath "$ATP_PROJECT_CONFIG_PARENT_DIR_PATH/$filename")"
 }
 
 cleanup_env() {
-	CONFIG_PARENT_DIR_PATH="$ATP_PROJECT_OLD_CONFIG_PARENT_DIR_PATH"
-	CONFIG_FILE_REALPATH="$ATP_PROJECT_OLD_CONFIG_FILE_REALPATH"
+	unset ATP_PROJECT_CONFIG_PARENT_DIR_PATH
+	unset ATP_PROJECT_CONFIG_FILE_REALPATH
 }
 
 # From https://stackoverflow.com/a/3232082/771948
@@ -19,10 +17,10 @@ confirm() {
 	read -r -p "${1:-Are you sure?} [y/N] " response
 	case "$response" in
 		[yY][eE][sS]|[yY])
-			true
+			return 0
 			;;
 		*)
-			false
+			return 1
 			;;
 	esac
 }
@@ -32,7 +30,7 @@ config_has_project() {
 	local query='.projects.projects | has($name)'
 	local exists=""
 
-	exists="$(jq -r --arg name "$1" "$query" "$CONFIG_FILE_REALPATH")"
+	exists="$(jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
 
 	if [ "$exists" = "true" ]; then
 		true
@@ -46,7 +44,7 @@ get_dir_for_project() {
 	local query='.projects.defaults * .projects.projects[$name]
 	 | "\(.home)/\(.base)/teams/\(.team)/\(.org)/\(.path)/"'
 
-	jq -r --arg name "$1" "$query" "$CONFIG_FILE_REALPATH"
+	jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH"
 }
 
 usage() {
@@ -65,21 +63,56 @@ usage() {
 			Remove from the project list the mapping matching the specified name"
 }
 
-list() {
-	[ ! -f "$CONFIG_FILE_REALPATH" ] && return 1
+make_config() {
+	echo "Creating new project mapping store at $ATP_PROJECT_CONFIG_FILE_REALPATH"
 
-	# shellcheck disable=SC2016
-	local query='.projects.projects | keys[]'
+	echo "Please fill out some default values for the config:"
+	read -rp "Base Name (base): " base
+	read -rp "Team Name (team): " team
+	read -rp "Org Name (org): " org
 
-	jq -r "$query" "$CONFIG_FILE_REALPATH"
+	mkdir -p "$ATP_PROJECT_CONFIG_PARENT_DIR_PATH" && \
+		jq -n -r\
+		--arg home "$HOME"\
+		--arg team "$team"\
+		--arg base "$base"\
+		--arg org "$org"\
+		'{
+			"teams": { ($team): { "path": $team } },
+			"orgs": { ($org): { "path": $org } },
+			"projects": {
+				"defaults": {
+					"home": $home,
+					"base": $base,
+					"team": $team,
+					"org": $org
+				},
+				"projects": {}
+			}
+		}' > "$ATP_PROJECT_CONFIG_FILE_REALPATH"
 
-	return "$?"
+	[ -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ] && return 0 || return 1
+}
+
+setup_map() {
+	if ! [ -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ]; then
+		echo "I could not find the project mapping store."
+
+		if confirm "Should I initialise a new project mapping store?"; then
+			make_config && return 0 || return 1
+		else
+			echo "No changes were made. Exiting."
+			return 1
+		fi
+	else
+		return 0
+	fi
 }
 
 update() {
-	local store="$CONFIG_FILE_REALPATH"
-	local tmp="$CONFIG_FILE_REALPATH.tmp"
-	local bak="$CONFIG_FILE_REALPATH.bak"
+	local store="$ATP_PROJECT_CONFIG_FILE_REALPATH"
+	local tmp="$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
+	local bak="$ATP_PROJECT_CONFIG_FILE_REALPATH.bak"
 
 	if [ -f "$tmp" ]; then
 		echo "Backing up the project mapping store."
@@ -123,7 +156,20 @@ update() {
 	return "$?"
 }
 
+list() {
+	[ ! -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ] && return 1
+
+	# shellcheck disable=SC2016
+	local query='.projects.projects | keys[]'
+
+	jq -r "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH"
+
+	return "$?"
+}
+
 add() {
+	setup_map || return 1
+
 	local fullpath=""
 	local name=""
 
@@ -140,9 +186,9 @@ add() {
 		return 1
 	fi
 
-	home="$(jq -r '.projects.defaults.home' "$CONFIG_FILE_REALPATH")"
-	base="$(jq -r '.projects.defaults.base' "$CONFIG_FILE_REALPATH")"
-	team="$(jq -r '.projects.defaults.team' "$CONFIG_FILE_REALPATH")"
+	home="$(jq -r '.projects.defaults.home' "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	base="$(jq -r '.projects.defaults.base' "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	team="$(jq -r '.projects.defaults.team' "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
 	root="$home/$base/teams/$team/"
 
 	org="$(cut -d'/' -f1 <<< "${fullpath/$root/}")"
@@ -157,18 +203,18 @@ add() {
 	root+="$org/"
 	path=${fullpath/$root/}
 
-	jq -e --arg name "$name" --arg org "$org" --arg path "$path" "$write_query" "$CONFIG_FILE_REALPATH" > "$CONFIG_FILE_REALPATH.tmp"
+	jq -e --arg name "$name" --arg org "$org" --arg path "$path" "$write_query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
-	update
-
-	return "$?"
+	update && return 0 || return 1
 }
 
 delete() {
+	setup_map || return 1
+
 	echo "Deleting \"$1\""
 
 	if confirm; then
-		jq --arg name "$1" 'del(.projects.projects[$name])' "$CONFIG_FILE_REALPATH" > "$CONFIG_FILE_REALPATH.tmp"
+		jq --arg name "$1" 'del(.projects.projects[$name])' "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
 		update
 
@@ -178,58 +224,15 @@ delete() {
 	fi
 }
 
-make_config() {
-	echo "Creating new project mapping store at $CONFIG_FILE_REALPATH"
-
-	echo "Please fill out some default values for the config:"
-	read -pr "Company Name (company): " company
-	read -pr "Team Name (team): " team
-	read -pr "Org Name (org): " org
-
-	mkdir -p "$CONFIG_PARENT_DIR_PATH" && \
-		jq -n -r\
-		--arg home "$HOME"\
-		--arg team "$team"\
-		--arg company "$company"\
-		--arg org "$org"\
-		'{
-			"teams": { ($team): { "path": $team } },
-			"orgs": { ($org): { "path": $org } },
-			"projects": {
-				"defaults": {
-					"home": $home,
-					"company": $company,
-					"team": $team,
-					"org": $org
-				},
-				"projects": {}
-			}
-		}' > "$CONFIG_FILE_REALPATH"
-}
-
 go() {
+	setup_map || return 1
+
 	if ! config_has_project "$1"; then
 		echo "Project \"$1\" is not mapped."
 		return 0
 	fi
 
 	cd "$(get_dir_for_project "$1")" || return "$?"
-}
-
-setup_map() {
-	if [ ! -f "$CONFIG_FILE_REALPATH" ]; then
-		echo "I could not find the project mapping store."
-
-		if confirm "Should I initialise a new project mapping store?"; then
-			make_config
-			return "$?"
-		else
-			echo "No changes were made. Exiting."
-			return 0
-		fi
-	else
-		return 0
-	fi
 }
 
 # App entry point
@@ -244,22 +247,19 @@ run() {
 
 	case "$1" in
 	"-l") # list names of mapped projects
-		[ $# -gt 1 ] && usage && return 0
+		[ $# -gt 1 ] && usage && return 1
 		list
 		;;
 	"-a") # add to map
-		[ $# -gt 3 ] || [ -n "$2" ] && ! [ -d "$2" ] && usage && return 0
-		setup_map
+		[ $# -gt 3 ] || [ -n "$2" ] && ! [ -d "$2" ] && usage && return 1
 		add "$2" "$3"
 		;;
 	"-d") # delete from map
-		[ $# -ne 2 ] || [ -z "$2" ] && usage && return 0
-		setup_map
+		[ $# -ne 2 ] || [ -z "$2" ] && usage && return 1
 		delete "$2"
 		;;
 	*) # open the project directory
-		[ -z "$1" ] && usage && return 0
-		setup_map
+		[ -z "$1" ] && usage && return 1
 		go "$1"
 		;;
 	esac
