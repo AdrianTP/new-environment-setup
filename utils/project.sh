@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 
-setup_env() {
+_setup_env() {
 	local filename="projects.json"
+
 	ATP_PROJECT_CONFIG_PARENT_DIR_PATH="$(realpath "$HOME/.private")"
 	ATP_PROJECT_CONFIG_FILE_REALPATH="$(realpath "$ATP_PROJECT_CONFIG_PARENT_DIR_PATH/$filename")"
 }
 
-cleanup_env() {
+_cleanup_env() {
 	unset ATP_PROJECT_CONFIG_PARENT_DIR_PATH
 	unset ATP_PROJECT_CONFIG_FILE_REALPATH
 }
 
 # From https://stackoverflow.com/a/3232082/771948
-confirm() {
+_confirm() {
+	local response
+
 	# call with a prompt string or use a default
 	read -r -p "${1:-Are you sure?} [y/N] " response
 	case "$response" in
@@ -25,11 +28,11 @@ confirm() {
 	esac
 }
 
-config_has_project() {
-	# shellcheck disable=SC2016
-	local query='.projects | has($name)'
-	local exists=""
+_config_has_project() {
+	local query exists
 
+	# shellcheck disable=SC2016
+	query='.projects | has($name)'
 	exists="$(jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
 
 	if [ "$exists" = "true" ]; then
@@ -39,7 +42,7 @@ config_has_project() {
 	fi
 }
 
-get_dir_for_project() {
+_get_dir_for_project() {
 	# shellcheck disable=SC2016
 	local query='.projects[$name] as $p
 		| .orgs[$p.org] as $o
@@ -49,7 +52,7 @@ get_dir_for_project() {
 	jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH"
 }
 
-usage() {
+_usage() {
 	echo "Usage:
 		project <name>
 			cd to the directory mapped to the given name (tab completion available)
@@ -65,7 +68,9 @@ usage() {
 			Remove from the project list the mapping matching the specified name"
 }
 
-make_config() {
+_make_config() {
+	local account user email base path
+
 	echo "Creating new project mapping store at $ATP_PROJECT_CONFIG_FILE_REALPATH"
 
 	echo "Please fill out some default values for the config:"
@@ -77,7 +82,7 @@ make_config() {
 
 	mkdir -p "$ATP_PROJECT_CONFIG_PARENT_DIR_PATH" && \
 		jq -n -r\
-		--arg halias  "$(basename "$HOME")"\
+		--arg ralias  "$(basename "$HOME")"\
 		--arg home    "$HOME"\
 		--arg account "$account"\
 		--arg user    "$user"\
@@ -87,7 +92,7 @@ make_config() {
 		--arg org     "$org"\
 		'{
 			"roots": {
-				$halias: $home,
+				$ralias: $home,
 			"accounts": {
 				($account): {
 					"user": $user,
@@ -97,7 +102,7 @@ make_config() {
 			"bases": {
 				($base): {
 					"account": $account,
-					"root": $halias,
+					"root": $ralias,
 					"path": $path
 				}
 			},
@@ -108,12 +113,12 @@ make_config() {
 	[ -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ] && return 0 || return 1
 }
 
-setup_map() {
+_setup_map() {
 	if ! [ -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ]; then
 		echo "I could not find the project mapping store."
 
-		if confirm "Should I initialise a new project mapping store?"; then
-			make_config && return 0 || return 1
+		if _confirm "Should I initialise a new project mapping store?"; then
+			_make_config && return 0 || return 1
 		else
 			echo "No changes were made. Exiting."
 			return 1
@@ -123,10 +128,12 @@ setup_map() {
 	fi
 }
 
-update() {
-	local store="$ATP_PROJECT_CONFIG_FILE_REALPATH"
-	local tmp="$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
-	local bak="$ATP_PROJECT_CONFIG_FILE_REALPATH.bak"
+_update() {
+	local store tmp bak
+
+	store="$ATP_PROJECT_CONFIG_FILE_REALPATH"
+	tmp="$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
+	bak="$ATP_PROJECT_CONFIG_FILE_REALPATH.bak"
 
 	if [ -f "$tmp" ]; then
 		echo "Backing up the project mapping store."
@@ -160,55 +167,41 @@ update() {
 			return 1
 		fi
 
-		complete -W "$(list)" project
-		return 0
+		if ! [ -x "$(command -v project)" ]; then # https://stackoverflow.com/a/26759734/771948
+			echo "Update failed. Exiting."
+			return 1
+		else
+			complete -W "$(_list)" project && return 0 || return 1
+		fi
 	else
 		echo "Update failed. Exiting."
 		return 1
 	fi
-
-	return "$?"
 }
 
-list() {
+_list() {
 	[ ! -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ] && return 1
 
 	# shellcheck disable=SC2016
 	local query='.projects | keys[]'
 
-	jq -r "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH"
-
-	return "$?"
+	jq -r "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" && return 0 || return 1
 }
 
-add() {
-	setup_map || return 1
+_add() {
+	_setup_map || return 1
 
-	local fullpath=""
-	local name=""
-	local rootquery=""
-	local root=""
-	local rootalias=""
-	local rootpath=""
-	local pathnoroot=""
-	local basequery=""
-	local base=""
-	local basealias=""
-	local basepath=""
-	local pathnobase=""
-	local orgquery=""
-	local org=""
-	local orgalias=""
-	local orgpath=""
-	local pathnoorg=""
-	local write_query=""
+	local fullpath name write_query\
+		rootquery root rootalias rootpath pathnoroot\
+		basequery base basealias basepath pathnobase\
+		orgquery org orgalias orgpath pathnoorg
 
 	# use current directory if none specified
 	[ -z "$1" ] && fullpath="$(pwd)" || fullpath="$(realpath "$1")"
 	# use folder name as name if no args
 	[ -z "$2" ] && name="$(basename "$fullpath")" || name="$(basename "$2")"
 
-	if config_has_project "$name"; then
+	if _config_has_project "$name"; then
 		echo "Project \"$name\" is already mapped!"
 		return 1
 	fi
@@ -245,76 +238,96 @@ add() {
 	write_query='.projects[$name]={ org: $orgalias, path: $pathnoorg }'
 	jq -e --arg name "$name" --arg orgalias "$orgalias" --arg pathnoorg "$pathnoorg" "$write_query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
-	update && return 0 || return 1
+	_update && return 0 || return 1
 }
 
-delete() {
-	setup_map || return 1
+_delete() {
+	_setup_map || return 1
 
 	echo "Deleting \"$1\""
 
-	if confirm; then
+	if _confirm; then
 		jq --arg name "$1" 'del(.projects[$name])' "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
-		update
-
-		return "$?"
+		_update && return 0 || return 1
 	else
-		echo "No changes were made. Exiting."; return 0;
+		echo "No changes were made. Exiting."
+		return 0
 	fi
 }
 
-go() {
-	setup_map || return 1
+_go() {
+	_setup_map || return 1
 
-	if ! config_has_project "$1"; then
+	if ! _config_has_project "$1"; then
 		echo "Project \"$1\" is not mapped."
-		return 0
+		return 1
 	fi
 
-	cd "$(get_dir_for_project "$1")" || return "$?"
+	cd "$(_get_dir_for_project "$1")" && return 0 || return 1
 }
 
 # App entry point
-run() {
+_run() {
 	if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
 		# shellcheck disable=SC2016
 		echo 'jq is not installed. Run `brew install jq`.' >&2
 		return 1
 	fi
 
-	setup_env
+	_setup_env
 
 	case "$1" in
 	"-l") # list names of mapped projects
-		[ $# -gt 1 ] && usage && return 1
-		list
+		[ $# -gt 1 ] && _usage && return 1
+		_list
 		;;
 	"-a") # add to map
-		[ $# -gt 3 ] || [ -n "$2" ] && ! [ -d "$2" ] && usage && return 1
-		add "$2" "$3"
+		[ $# -gt 3 ] || [ -n "$2" ] && ! [ -d "$2" ] && _usage && return 1
+		_add "$2" "$3"
 		;;
 	"-d") # delete from map
-		[ $# -ne 2 ] || [ -z "$2" ] && usage && return 1
-		delete "$2"
+		[ $# -ne 2 ] || [ -z "$2" ] && _usage && return 1
+		_delete "$2"
 		;;
 	*) # open the project directory
-		[ -z "$1" ] && usage && return 1
-		go "$1"
+		[ -z "$1" ] && _usage && return 1
+		_go "$1"
+		# TODO: these are possible workarounds for the scope collisions caused by
+		#       my source/cd approach
+		# get_dir_for_project "$1"
+		# open -a iTerm "$(get_dir_for_project "$1")"
 		;;
 	esac
 
-	cleanup_env
-
-	return "$?"
+	_cleanup_env
 }
+
+# TODO: this is in case i need to change to the "open -a iTerm" approach
+# get_dir_for_project() {
+# 	setup_map || return 1
+
+# 	# shellcheck disable=SC2016
+# 	local query='.projects[$name] as $p
+# 		| .orgs[$p.org] as $o
+# 		| .bases[$o.base] as $b
+# 		| .roots[$b.root] + "/" + $b.path + "/" + $o.path + "/" + $p.path'
+
+# 	if ! config_has_project "$1"; then
+# 		echo "Project \"$1\" is not mapped."
+# 		return 0
+# 	fi
+
+# 	jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" && return 0 || return 1
+# }
+
 
 # The recommended use of this script includes the inclusion of the following
 # code in your ~/.bash_profile:
 #
 # project() {
 # 	source "project.sh"
-# 	run "$@"
+# 	_run "$@"
 # }
 
 # complete -W "$(project -l)" project

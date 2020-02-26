@@ -91,7 +91,7 @@ complete -W "$(db -l)" db
 
 project() {
 	source "project.sh"
-	run "$@"
+	_run "$@"
 }
 
 complete -W "$(project -l)" project
