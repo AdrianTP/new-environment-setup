@@ -225,7 +225,6 @@ add() {
 	# shellcheck disable=SC2016
 	basequery='.bases | to_entries[] | select(.value.root == $rootalias) | select(.value as $val | $pathnoroot | startswith($val.path))'
 	base="$(jq -r --arg rootalias "$rootalias" --arg pathnoroot "$pathnoroot" "$basequery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
-	echo "$base"
 	[ -z "$base" ] && echo "Could not find base in config." && return 1
 
 	basealias="$(jq -r '.key' <<< "$base")"
