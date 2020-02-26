@@ -27,7 +27,7 @@ confirm() {
 
 config_has_project() {
 	# shellcheck disable=SC2016
-	local query='.projects.projects | has($name)'
+	local query='.projects | has($name)'
 	local exists=""
 
 	exists="$(jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
@@ -41,8 +41,10 @@ config_has_project() {
 
 get_dir_for_project() {
 	# shellcheck disable=SC2016
-	local query='.projects.defaults * .projects.projects[$name]
-	 | "\(.home)/\(.base)/teams/\(.team)/\(.org)/\(.path)/"'
+	local query='.projects[$name] as $p
+		| .orgs[$p.org] as $o
+		| .bases[$o.base] as $b
+		| .roots[$b.root] + "/" + $b.path + "/" + $o.path + "/" + $p.path'
 
 	jq -r --arg name "$1" "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH"
 }
@@ -67,28 +69,40 @@ make_config() {
 	echo "Creating new project mapping store at $ATP_PROJECT_CONFIG_FILE_REALPATH"
 
 	echo "Please fill out some default values for the config:"
-	read -rp "Base Name (base): " base
-	read -rp "Team Name (team): " team
-	read -rp "Org Name (org): " org
+	read -rp "Account Alias (account): " account
+	read -rp "  Name (user): "           user
+	read -rp "  Email (email): "         email
+	read -rp "Base Alias (base): "       base
+	read -rp "  Path (path): "           path
 
 	mkdir -p "$ATP_PROJECT_CONFIG_PARENT_DIR_PATH" && \
 		jq -n -r\
-		--arg home "$HOME"\
-		--arg team "$team"\
-		--arg base "$base"\
-		--arg org "$org"\
+		--arg halias  "$(basename "$HOME")"\
+		--arg home    "$HOME"\
+		--arg account "$account"\
+		--arg user    "$user"\
+		--arg email   "$email"\
+		--arg base    "$base"\
+		--arg path    "$path"\
+		--arg org     "$org"\
 		'{
-			"teams": { ($team): { "path": $team } },
-			"orgs": { ($org): { "path": $org } },
-			"projects": {
-				"defaults": {
-					"home": $home,
-					"base": $base,
-					"team": $team,
-					"org": $org
-				},
-				"projects": {}
-			}
+			"roots": {
+				$halias: $home,
+			"accounts": {
+				($account): {
+					"user": $user,
+					"email": $email
+				}
+			},
+			"bases": {
+				($base): {
+					"account": $account,
+					"root": $halias,
+					"path": $path
+				}
+			},
+			"orgs": {},
+			"projects": {}
 		}' > "$ATP_PROJECT_CONFIG_FILE_REALPATH"
 
 	[ -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ] && return 0 || return 1
@@ -160,7 +174,7 @@ list() {
 	[ ! -f "$ATP_PROJECT_CONFIG_FILE_REALPATH" ] && return 1
 
 	# shellcheck disable=SC2016
-	local query='.projects.projects | keys[]'
+	local query='.projects | keys[]'
 
 	jq -r "$query" "$ATP_PROJECT_CONFIG_FILE_REALPATH"
 
@@ -173,9 +187,6 @@ add() {
 	local fullpath=""
 	local name=""
 
-	# shellcheck disable=SC2016
-	local write_query='.projects.projects[$name]={ org: $org, path: $path }'
-
 	# use current directory if none specified
 	[ -z "$1" ] && fullpath="$(pwd)" || fullpath="$(realpath "$1")"
 	# use folder name as name if no args
@@ -186,24 +197,42 @@ add() {
 		return 1
 	fi
 
-	home="$(jq -r '.projects.defaults.home' "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
-	base="$(jq -r '.projects.defaults.base' "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
-	team="$(jq -r '.projects.defaults.team' "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
-	root="$home/$base/teams/$team/"
+	# shellcheck disable=SC2016
+	local rootquery='.roots | to_entries[] | select(.value as $val | $fullpath | startswith($val))'
+	local root="$(jq -r --arg fullpath "$fullpath" "$rootquery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	[ -z "$root" ] && echo "Could not find root in config." && return 1
 
-	org="$(cut -d'/' -f1 <<< "${fullpath/$root/}")"
-	if [ -z "$org" ]; then
-		echo "Could not automatically determine the org this project belongs to."
-		echo "It is possible that it is not mapped to the folder structure."
-		echo "Exiting."
+	local rootalias="$(jq -r '.key' <<< "$root")"
+	echo "rootalias $rootalias"
+	local rootpath="$(jq -r '.value' <<< "$root")"
+	echo "rootpath $rootpath"
+	local pathnoroot="${fullpath/$rootpath\//}"
+	echo "fullpath $fullpath"
+	echo "pathnoroot $pathnoroot"
 
-		return 1
-	fi
+	# shellcheck disable=SC2016
+	local basequery='.bases | to_entries[] | select(.value.root == $rootalias) | select(.value as $val | $pathnoroot | startswith($val.path))'
+	local base="$(jq -r --arg rootalias "$rootalias" --arg pathnoroot "$pathnoroot" "$basequery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	echo "$base"
+	[ -z "$base" ] && echo "Could not find base in config." && return 1
 
-	root+="$org/"
-	path=${fullpath/$root/}
+	local basealias="$(jq -r '.key' <<< "$base")"
+	local basepath="$(jq -r '.value.path' <<< "$base")"
+	local pathnobase="${pathnoroot/$basepath\//}"
 
-	jq -e --arg name "$name" --arg org "$org" --arg path "$path" "$write_query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
+	# shellcheck disable=SC2016
+	local orgquery='.orgs | to_entries[] | select(.value.base == $basealias) | select(.value as $val | $pathnobase | startswith($val.path))'
+	local org="$(jq -r --arg basealias "$basealias" --arg pathnobase "$pathnobase" "$orgquery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	[ -z "$org" ] && echo "Could not find org in config." && return 1
+
+	local orgalias="$(jq -r '.key' <<< "$org")"
+	local orgpath="$(jq -r '.value.path' <<< "$org")"
+	local pathnoorg="${pathnobase/$orgpath\//}"
+	[ -z "$pathnoorg" ] && echo "Failed to map this project" && return 1
+
+	# shellcheck disable=SC2016
+	local write_query='.projects[$name]={ org: $orgalias, path: $pathnoorg }'
+	jq -e --arg name "$name" --arg orgalias "$orgalias" --arg pathnoorg "$pathnoorg" "$write_query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
 	update && return 0 || return 1
 }

@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+
+setup_env() {
+	local projects="projects.json"
+	local egit="egit.json"
+
+	ATP_SCRIPT_CONFIG_PARENT_DIR_PATH="$(realpath "$HOME/.private")"
+	ATP_PROJECT_CONFIG_FILE_REALPATH="$(realpath "$ATP_SCRIPT_CONFIG_PARENT_DIR_PATH/$projects")"
+
+	ATP_EGIT_CONFIG_FILE_REALPATH="$(realpath "$ATP_PROJECT_CONFIG_PARENT_DIR_PATH/$egit")"
+}
+
+cleanup_env() {
+	unset ATP_SCRIPT_CONFIG_PARENT_DIR_PATH
+	unset ATP_PROJECT_CONFIG_FILE_REALPATH
+	unset ATP_EGIT_CONFIG_FILE_REALPATH
+}
+
+# From https://stackoverflow.com/a/3232082/771948
+confirm() {
+	# call with a prompt string or use a default
+	read -r -p "${1:-Are you sure?} [y/N] " response
+	case "$response" in
+		[yY][eE][sS]|[yY])
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+is_git_repo() {
+	[ -d .git ] && git rev-parse --git-dir > /dev/null 2>&1
+}
+
+clone() {
+	# process flags
+	# if location specified, clone to location, otherwise clone to pwd
+	# cd
+	# perform follow-up actions
+
+	# TODO: -a [account] # config with account user and email
+	# config() $account (user and email values from projects.json)
+	# if account, config() with user and email from that account in projects.json
+	# otherwise, config() with default for specified base
+
+	# TODO: -m [alias] # map to alias
+	# TODO: -b [base] # clone into appropriate location for specified base
+	# example git@git.enova.com:8b/identity.git
+	# org="$(cut -d':' -f2 <<< "$1")"
+	# cd to $root/$base/$org
+	# git clone <url>
+	# project -a (add this repo to map)
+}
+
+# config() {
+# 	cwd=$(pwd)
+# 	start_dir="${1:-.}"
+# 	for d in $(find $start_dir -type d); do
+# 		dir_absolute=$(greadlink -f $d)
+# 		cd $dir_absolute
+# 		# if [ -d .git ] && git rev-parse --git-dir > /dev/null 2>&1; then
+# 		if is_git_repo; then
+# 			echo "Updating git config for $dir_absolute"
+# 			git config --local user.name "athomas8"
+# 			git config --local user.email "athomas8@enova.com"
+# 		fi
+# 	cd $cwd
+# 	done
+# }
+
+# TODO: use projects.sh as guidance
+# TODO: $1 = clone # call clone()
+# TODO: $1 = config # call config()
+
+# TODO: command examples:
+# - egit config
+#   1. change user/email to default for parent base, if any
+# - egit config <account>
+#   1. change user/email to values at specified key in projects.json
+# - egit clone <url>
+#   1. clone repo in-place
+# - egit clone <url> -a
+#   1. clone repo in-place
+#   2. change user/email to those of parent base for org, if mapped
+# - egit clone <url> -a <account>
+#   1. clone repo in-place
+#   2. change user/email to values at specified key in projects.json
+# - egit clone <url> -m
+#   1. clone repo in-place
+#   2. add repo to map, if possible
+# - egit clone <url> -m <alias>
+#   1. clone repo in-place
+#   2. add repo to map, using specified alias, if possible
+# - egit clone <url> -m -b <base>
+#   1. clone repo in-place
+#   2. add repo to map, under specified base, if possible
+#   3. change user/email to those of specified base
+# - egit clone <url> -m <alias> -b <base>
+#   1. clone repo in-place
+#   2. add repo to map, using specified alias, under specified base, if possible
+#   3. change user/email to those of specified base
+# - egit clone <url> -m <alias> -b <base> -a <account>
+#   1. clone repo in-place
+#   2. add repo to map, using specified alias, under specified base, if possible
+#   3. change user/email to values at specified key in projects.json
