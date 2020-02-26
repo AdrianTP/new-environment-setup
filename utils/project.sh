@@ -254,7 +254,7 @@ delete() {
 	echo "Deleting \"$1\""
 
 	if confirm; then
-		jq --arg name "$1" 'del(.projects.projects[$name])' "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
+		jq --arg name "$1" 'del(.projects[$name])' "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
 		update
 
