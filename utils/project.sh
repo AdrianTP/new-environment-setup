@@ -186,6 +186,22 @@ add() {
 
 	local fullpath=""
 	local name=""
+	local rootquery=""
+	local root=""
+	local rootalias=""
+	local rootpath=""
+	local pathnoroot=""
+	local basequery=""
+	local base=""
+	local basealias=""
+	local basepath=""
+	local pathnobase=""
+	local orgquery=""
+	local org=""
+	local orgalias=""
+	local orgpath=""
+	local pathnoorg=""
+	local write_query=""
 
 	# use current directory if none specified
 	[ -z "$1" ] && fullpath="$(pwd)" || fullpath="$(realpath "$1")"
@@ -198,40 +214,36 @@ add() {
 	fi
 
 	# shellcheck disable=SC2016
-	local rootquery='.roots | to_entries[] | select(.value as $val | $fullpath | startswith($val))'
-	local root="$(jq -r --arg fullpath "$fullpath" "$rootquery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	rootquery='.roots | to_entries[] | select(.value as $val | $fullpath | startswith($val))'
+	root="$(jq -r --arg fullpath "$fullpath" "$rootquery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
 	[ -z "$root" ] && echo "Could not find root in config." && return 1
 
-	local rootalias="$(jq -r '.key' <<< "$root")"
-	echo "rootalias $rootalias"
-	local rootpath="$(jq -r '.value' <<< "$root")"
-	echo "rootpath $rootpath"
-	local pathnoroot="${fullpath/$rootpath\//}"
-	echo "fullpath $fullpath"
-	echo "pathnoroot $pathnoroot"
+	rootalias="$(jq -r '.key' <<< "$root")"
+	rootpath="$(jq -r '.value' <<< "$root")"
+	pathnoroot="${fullpath/$rootpath\//}"
 
 	# shellcheck disable=SC2016
-	local basequery='.bases | to_entries[] | select(.value.root == $rootalias) | select(.value as $val | $pathnoroot | startswith($val.path))'
-	local base="$(jq -r --arg rootalias "$rootalias" --arg pathnoroot "$pathnoroot" "$basequery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	basequery='.bases | to_entries[] | select(.value.root == $rootalias) | select(.value as $val | $pathnoroot | startswith($val.path))'
+	base="$(jq -r --arg rootalias "$rootalias" --arg pathnoroot "$pathnoroot" "$basequery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
 	echo "$base"
 	[ -z "$base" ] && echo "Could not find base in config." && return 1
 
-	local basealias="$(jq -r '.key' <<< "$base")"
-	local basepath="$(jq -r '.value.path' <<< "$base")"
-	local pathnobase="${pathnoroot/$basepath\//}"
+	basealias="$(jq -r '.key' <<< "$base")"
+	basepath="$(jq -r '.value.path' <<< "$base")"
+	pathnobase="${pathnoroot/$basepath\//}"
 
 	# shellcheck disable=SC2016
-	local orgquery='.orgs | to_entries[] | select(.value.base == $basealias) | select(.value as $val | $pathnobase | startswith($val.path))'
-	local org="$(jq -r --arg basealias "$basealias" --arg pathnobase "$pathnobase" "$orgquery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
+	orgquery='.orgs | to_entries[] | select(.value.base == $basealias) | select(.value as $val | $pathnobase | startswith($val.path))'
+	org="$(jq -r --arg basealias "$basealias" --arg pathnobase "$pathnobase" "$orgquery" "$ATP_PROJECT_CONFIG_FILE_REALPATH")"
 	[ -z "$org" ] && echo "Could not find org in config." && return 1
 
-	local orgalias="$(jq -r '.key' <<< "$org")"
-	local orgpath="$(jq -r '.value.path' <<< "$org")"
-	local pathnoorg="${pathnobase/$orgpath\//}"
+	orgalias="$(jq -r '.key' <<< "$org")"
+	orgpath="$(jq -r '.value.path' <<< "$org")"
+	pathnoorg="${pathnobase/$orgpath\//}"
 	[ -z "$pathnoorg" ] && echo "Failed to map this project" && return 1
 
 	# shellcheck disable=SC2016
-	local write_query='.projects[$name]={ org: $orgalias, path: $pathnoorg }'
+	write_query='.projects[$name]={ org: $orgalias, path: $pathnoorg }'
 	jq -e --arg name "$name" --arg orgalias "$orgalias" --arg pathnoorg "$pathnoorg" "$write_query" "$ATP_PROJECT_CONFIG_FILE_REALPATH" > "$ATP_PROJECT_CONFIG_FILE_REALPATH.tmp"
 
 	update && return 0 || return 1
