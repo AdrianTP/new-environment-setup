@@ -1,1 +1,1 @@
-- [ ] symlink this dir into ~/.git/hooks
+- [ ] symlink this dir into ~/.git/hooks? alternatively, symlink each individual hook

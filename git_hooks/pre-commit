@@ -10,6 +10,7 @@
 
 # From https://stackoverflow.com/a/3232082/771948
 confirm() {
+	local response
 	# call with a prompt string or use a default
 	read -r -p "${1:-Are you sure? [y/N]} " response
 	case "$response" in
@@ -22,106 +23,225 @@ confirm() {
 	esac
 }
 
-echo "Running pre-commit checks..."
-printf "\nTo skip these checks, add the \`--no-verify\` when you run \`git commit\`.\n"
+test_go() {
+	local tests
+	# Runs Go tests and halts if any tests fail
+	printf "\nRunning \`go test ./...\`\n"
+	tests=$(go test -count=1 ./... 2>&1)
+	if [[ "$tests" == *"FAIL"* ]]; then
+		echo >&2 "Tests failed:"
+		echo "$tests"
+		return 1
+	elif [[ "$tests" == *"can't load package"* ]]; then
+		echo >&2 "Tests missing:"
+		echo "$tests"
+		return 1
+	elif [[ "$tests" == "ok"* ]]; then
+		echo "Tests passed!"
+		echo "$tests"
+		return 0
+	fi
+}
 
-# Gathers all staged golang files
-echo "Gathering all changed golang files..."
-gofiles=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$')
-if [ -z "$gofiles" ]; then
-	echo "No changed golang files found; exiting"
+lint_go() {
+	# Runs and prints linting results
+	printf "\nRunning \`golint ./...\`\n"
+	golint ./...
+	printf "\nRunning \`gocritic check ./...\`\n"
+	gocritic check ./...
+	printf "\nRunning \`go vet ./...\`\n"
+	go vet ./...
+}
+
+todo_all() {
+	local todo_re printed f matches m
+	# Find TODO, FIXME, etc. in staged files and halt if detected
+	printf "\nChecking for TODO, FIXME, etc.\n"
+	todo_re="(TODO|FIXME|CHANGED|XXX|IDEA|HACK|NOTE|REVIEW|NB|BUG|QUESTION|COMBAK|TEMP)"
+	printed=false
+	while read -r f; do
+		matches=$(grep -nE "$todo_re" "$f")
+		if [ -n "$matches" ]; then
+			if [ "$printed" == false ]; then
+				echo >&2 "Files contain TODO-style comments:"
+				printed=true
+			fi
+			echo "  in \`$f\`:"
+			while read -r m; do
+				echo "    $m"
+			done <<< "$matches"
+		fi
+	done <<< "$1"
+
+	if [ "$printed" == true ]; then
+		echo >&2 "Please remove these comments before committing your code"
+		return 1
+	else
+		return 0
+	fi
+}
+
+debug_go() {
+	local import_re spew_call_re printed f imports calls import call
+	# Find calls to spew
+	printf "\nChecking for usage of Spew\n"
+	import_re="github.com/davecgh/go-spew/spew"
+	spew_call_re="spew\."
+	printed=false
+	while read -r f; do
+		imports=$(grep -n "$import_re" "$f")
+		calls=$(grep -n "$spew_call_re" "$f")
+		if [ -n "$imports" ] || [ -n "$calls" ]; then
+			if [ "$printed" == false ]; then
+				echo >&2 "Files contain references to spew:"
+				printed=true
+			fi
+			echo "  in \`$f\`:"
+			echo "    import(s):"
+			while read -r import; do
+				echo "      $import"
+			done <<< "$imports"
+			echo "    call(s):"
+			while read -r call; do
+				echo "      $call"
+			done <<< "$calls"
+		fi
+	done <<< "$1"
+
+	if [ "$printed" == true ];then
+		echo >&2 "Please remove these references to Spew before committing your code"
+		return 1
+	else
+		return 0
+	fi
+}
+
+format_go() {
+	local unformatted fn
+	# if unformatted files exist, exit and print
+	printf "\nRunning \`gofmt -l <changed_files>\`\n"
+	# shellcheck disable=SC2086 # quoting $gofiles breaks it
+	unformatted=$(gofmt -l $gofiles 2>&1)
+	if [ -n "$unformatted" ]; then
+		# Some files are not gofmt'd. Print message and fail.
+
+		echo >&2 "Go files must be formatted with gofmt. Please run:"
+		for fn in $unformatted; do
+			echo >&2 "  gofmt -w $PWD/$fn"
+		done
+
+		return 1
+	else
+		return 0
+	fi
+}
+
+check_go() {
+	local gofiles
+	# Gathers all staged Go files
+	echo "Gathering all changed Go files..."
+	gofiles=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$')
+	if [ -z "$gofiles" ]; then
+		echo "No changed Go files found; skipping"
+	else
+		test_go || return 1
+		lint_go || return 1
+		todo_all "$gofiles" || return 1
+		debug_go "$gofiles" || return 1
+		format_go "$gofiles" || return 1
+	fi
+
+	return 0
+}
+
+test_ruby() {
+	local tests pid spin i
+	# Runs Ruby tests and halts if any tests fail
+	# printf "\nRunning \`bundle exec rake\`\n"
+	# tests="$(bundle exec rake 2>&1)"
+	printf "\nRunning \`bundle exec rubocop\`\n"
+	tests="$(bundle exec rubocop 2>&1)"
+	# pid=$!
+
+	# spin='-\|/'
+
+	# i=0
+	# while kill -0 $pid 2>/dev/null
+	# do
+	# 	i=$(( (i+1) %4 ))
+	# 	printf "\r${spin:$i:1}"
+	# 	sleep .1
+	# done
+
+	if [ $? -ne 0 ]; then
+		echo >&2 "Rake failed:"
+		echo "$tests"
+		return 1
+	else
+		echo "Tests passed!"
+		return 0
+	fi
+}
+
+debug_ruby() {
+	local import_re debug_call_re printed f imports calls import call
+	# Find calls to puts or binding.pry
+	printf "\nChecking for usage of binding.pry or puts\n"
+	import_re="require.*pry.*"
+	debug_call_re="(binding\.pry|puts)"
+	printed=false
+	while read -r f; do
+		imports=$(grep -n "$import_re" "$f")
+		calls=$(grep -n "$debug_call_re" "$f")
+		if [ -n "$imports" ] || [ -n "$calls" ]; then
+			if [ "$printed" == false ]; then
+				echo >&2 "Files contain calls to binding.pry or puts:"
+				printed=true
+			fi
+			echo "  in \`$f\`:"
+			echo "    import(s):"
+			while read -r import; do
+				echo "      $import"
+			done <<< "$imports"
+			echo "    call(s):"
+			while read -r call; do
+				echo "      $call"
+			done <<< "$calls"
+		fi
+	done <<< "$1"
+
+	if [ "$printed" == true ];then
+		echo >&2 "Please remove these calls before committing your code"
+		return 1
+	else
+		return 0
+	fi
+}
+
+check_ruby() {
+	local rbfiles
+	# Gathers all staged Ruby files
+	echo "Gathering all changed Ruby files..."
+	rbfiles=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rb$')
+	if [ -z "$rbfiles" ]; then
+		echo "No changed Ruby files found; skipping"
+	else
+		todo_all "$rbfiles" || return 1
+		debug_ruby "$rbfiles" || return 1
+		test_ruby || return 1
+	fi
+
+	return 0
+}
+
+run() {
+	echo "Running pre-commit checks..."
+	printf "\nTo skip these checks, add the \`--no-verify\` when you run \`git commit\`.\n"
+
+	check_go || exit 1
+	check_ruby || exit 1
+
 	exit 0
-fi
+}
 
-# Runs golang tests and halts if any tests fail
-printf "\nRunning \`go test ./...\`\n"
-tests=$(go test -count=1 ./... 2>&1)
-if [[ "$tests" == *"FAIL"* ]]; then
-	echo >&2 "Tests failed:"
-	echo "$tests"
-	exit 1
-elif [[ "$tests" == *"can't load package"* ]]; then
-	echo >&2 "Tests missing:"
-	echo "$tests"
-elif [[ "$tests" == "ok"* ]]; then
-	echo "Tests passed!"
-	echo "$tests"
-fi
-
-# Runs and prints linting results
-printf "\nRunning \`golint ./...\`\n"
-golint ./...
-printf "\nRunning \`gocritic check ./...\`\n"
-gocritic check ./...
-printf "\nRunning \`go vet ./...\`\n"
-go vet ./...
-
-# Find TODO, FIXME, etc. in staged files and halt if detected
-printf "\nChecking for TODO, FIXME, etc.\n"
-todo_re="//.*(TODO|FIXME|CHANGED|XXX|IDEA|HACK|NOTE|REVIEW|NB|BUG|QUESTION|COMBAK|TEMP)"
-printed=false
-while read -r f; do
-	matches=$(grep -nE "$todo_re" "$f")
-	if [ -n "$matches" ]; then
-		if [ "$printed" == false ]; then
-			echo >&2 "Files contain TODO-style comments:"
-			printed=true
-		fi
-		echo "  in \`$f\`:"
-		while read -r m; do
-			echo "    $m"
-		done <<< "$matches"
-	fi
-done <<< "$gofiles"
-
-if [ "$printed" == true ];then
-	echo >&2 "Please remove these comments before committing your code"
-	exit 1
-fi
-
-# Find calls to spew
-printf "\nChecking for usage of Spew\n"
-import_re="github.com/davecgh/go-spew/spew"
-spew_call_re="spew\."
-printed=false
-while read -r f; do
-	imports=$(grep -n "$import_re" "$f")
-	calls=$(grep -n "$spew_call_re" "$f")
-	if [ -n "$imports" ] || [ -n "$calls" ]; then
-		if [ "$printed" == false ]; then
-			echo >&2 "Files contain references to spew:"
-			printed=true
-		fi
-		echo "  in \`$f\`:"
-		echo "    import(s):"
-		while read -r import; do
-			echo "      $import"
-		done <<< "$imports"
-		echo "    call(s):"
-		while read -r call; do
-			echo "      $call"
-		done <<< "$calls"
-	fi
-done <<< "$gofiles"
-
-if [ "$printed" == true ];then
-	echo >&2 "Please remove these references to Spew before committing your code"
-	exit 1
-fi
-
-# if unformatted files exist, exit and print
-printf "\nRunning \`gofmt -l <changed_files>\`\n"
-# shellcheck disable=SC2086 # quoting $gofiles breaks it
-unformatted=$(gofmt -l $gofiles 2>&1)
-if [ -n "$unformatted" ]; then
-	# Some files are not gofmt'd. Print message and fail.
-
-	echo >&2 "Go files must be formatted with gofmt. Please run:"
-	for fn in $unformatted; do
-		echo >&2 "  gofmt -w $PWD/$fn"
-	done
-
-	exit 1
-else
-	echo "All is well!"
-fi
+run
