@@ -12,6 +12,11 @@ _cleanup_env() {
 	unset ATP_PROJECT_CONFIG_FILE_REALPATH
 }
 
+# https://stackoverflow.com/q/85880/771948
+_fn_exists() {
+	LC_ALL=C type $1 | grep -q "$1 is a function"
+}
+
 # From https://stackoverflow.com/a/3232082/771948
 _confirm() {
 	local response
@@ -167,7 +172,7 @@ _update() {
 			return 1
 		fi
 
-		if ! [ -x "$(command -v project)" ]; then # https://stackoverflow.com/a/26759734/771948
+		if ! _fn_exists "project"; then # https://stackoverflow.com/a/26759734/771948
 			echo "Update failed. Exiting."
 			return 1
 		else
