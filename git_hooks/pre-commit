@@ -57,7 +57,7 @@ todo_all() {
 	local todo_re printed f matches m
 	# Find TODO, FIXME, etc. in staged files and halt if detected
 	printf "\nChecking for TODO, FIXME, etc.\n"
-	todo_re="(TODO|FIXME|CHANGED|XXX|IDEA|HACK|NOTE|REVIEW|NB|BUG|QUESTION|COMBAK|TEMP)"
+	todo_re="(//|/\*+|\*+|#)\s*(TODO|FIXME|CHANGED|XXX|IDEA|HACK|NOTE|REVIEW|NB|BUG|QUESTION|COMBAK|TEMP)"
 	printed=false
 	while read -r f; do
 		matches=$(grep -nE "$todo_re" "$f")
