@@ -66,6 +66,9 @@ alias traps_stop="/Library/Application Support/PaloAltoNetworks/Traps/bin/cytool
 
 alias big_files="du -k * | awk '\$1 > 500000' | sort -nr"
 
+alias activate_py37="source ~/miniconda3/bin/activate py37"
+alias deactivate_py37="source ~/miniconda3/bin/deactivate py37"
+
 # Change owner of all files belonging to a user/group
 # sudo find . -user old_user -group old_group -exec chown new_user:new_group "{}" \;
 # add `-h` flag to chown to make it work on symlinks, too!
@@ -291,3 +294,19 @@ export SSL_CERT_FILE=/usr/local/etc/openssl/cert.pem
 
 # Homebrew complained at me, so here:
 export PATH="/usr/local/sbin:$PATH"
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/Users/athomas8/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/Users/athomas8/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/Users/athomas8/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/Users/athomas8/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
