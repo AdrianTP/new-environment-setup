@@ -30,8 +30,41 @@ confirm() {
 	esac
 }
 
+git_stash() {
+	git stash push -m "$1"
+}
+
+git_unstash() {
+	stash_id=$(git stash list | grep "$1" | gsed -rn 's/^(stash\@\{[[:digit:]]\}).*/\1/p')
+	git stash pop "$stash_id"
+}
+
 is_git_repo() {
 	[ -d .git ] && git rev-parse --git-dir > /dev/null 2>&1
+}
+
+# git_config_enova() {
+	# cwd=$(pwd)
+	# start_dir="${1:-.}"
+	# for d in $(find $start_dir -type d); do
+		# dir_absolute=$(greadlink -f $d)
+		# cd $dir_absolute
+		# # if [ -d .git ] && git rev-parse --git-dir > /dev/null 2>&1; then
+		# if is_git_repo; then
+			# echo "Updating git config for $dir_absolute"
+			# git config --local user.name "athomas8"
+			# git config --local user.email "athomas8@enova.com"
+		# fi
+	# cd $cwd
+	# done
+# }
+
+git_uncommit() {
+	git reset --soft HEAD~1
+}
+
+git_unrebase() {
+	git reset --hard ORIG_HEAD
 }
 
 clone() {

@@ -1,3 +1,4 @@
+echo "loading $USER's .profile"
 # ~/.profile: executed by the command interpreter for login shells.
 # This file is not read by bash(1), if ~/.bash_profile or ~/.bash_login
 # exists.
@@ -12,7 +13,7 @@
 if [ -n "$BASH_VERSION" ]; then
     # include .bashrc if it exists
     if [ -f "$HOME/.bashrc" ]; then
-	. "$HOME/.bashrc"
+      . "$HOME/.bashrc"
     fi
 fi
 
@@ -24,4 +25,14 @@ fi
 # set PATH so it includes user's private bin if it exists
 if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
+fi
+
+if [ -d "$HOME/repos/personal/new-environment-setup/utils" ]; then
+    PATH="$HOME/repos/personal/new-environment-setup/utils:$PATH"
+fi
+
+if [ -d "$HOME/.yarn/bin" ]; then
+    if [ -d "$HOME/.config/yarn/global/node_modules/.bin" ]; then
+        PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+    fi
 fi

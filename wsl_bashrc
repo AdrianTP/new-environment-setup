@@ -1,3 +1,4 @@
+echo "loading $USER's .bashrc"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -101,6 +102,10 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
+if [ -f ~/.bash_functions ]; then
+    . ~/.bash_functions
+fi
+
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
@@ -111,3 +116,13 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+if [ -n "$BASH_VERSION" ] || [ -n "$ZSH_VERSION" ]; then
+  source /usr/local/share/chruby/chruby.sh
+  source /usr/local/share/chruby/auto.sh
+fi
+# export GOPATH=$HOME/go
+# export PATH=$PATH:$(go env GOPATH)/bin
