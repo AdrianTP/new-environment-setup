@@ -1,0 +1,8 @@
+# MATCH_PATH = [
+#   (r"/home/adrian/repos/personal", "github")
+# ]
+
+# if ssh to host github, looks for files beginning with "id_" in ~/.ssh/identities/github
+MATCH_ARGV = [
+  (r"github", "github")
+]

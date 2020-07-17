@@ -36,3 +36,8 @@ if [ -d "$HOME/.yarn/bin" ]; then
         PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
     fi
 fi
+
+# https://github.com/ccontavalli/ssh-ident/blob/master/README
+if [ -d "$HOME/bin" ]; then
+    PATH="$HOME/bin:$PATH"
+fi
