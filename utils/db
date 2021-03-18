@@ -21,13 +21,10 @@ USAGE="Usage:
 # shellcheck disable=SC2016
 MERGE_QUERY='(.defaults * .databases[$TARGET] * .hosts[.databases[$TARGET].host_alias])'
 
-PASSWORD_QUERY=$(cat <<-_END_PASSWORD_QUERY_
-if .prompt_password then ""
+PASSWORD_QUERY='if .prompt_password then ""
 elif .password then "export PGPASSWORD=\(.password)"
 else ""
-end
-_END_PASSWORD_QUERY_
-)
+end'
 
 # shellcheck disable=SC2016
 CONNECT_QUERY='. as $d
