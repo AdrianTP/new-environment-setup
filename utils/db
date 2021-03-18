@@ -19,34 +19,65 @@ USAGE="Usage:
     List all mapped database names"
 
 # shellcheck disable=SC2016
-QUERY='(.defaults * .databases[$TARGET]) as $d | $d
- | ("psql -h \(.host) -d \(.database) -p \(.port) -U \(.user)") as $q
+MERGE_QUERY='(.defaults * .databases[$TARGET] * .hosts[.databases[$TARGET].host_alias])'
+
+PASSWORD_QUERY=$(cat <<-_END_PASSWORD_QUERY_
+if .prompt_password then ""
+elif .password then "export PGPASSWORD=\(.password)"
+else ""
+end
+_END_PASSWORD_QUERY_
+)
+
+# shellcheck disable=SC2016
+CONNECT_QUERY='. as $d
+ | "psql -h \(.host) -d \(.database) -p \(.port) -U \(.user)" as $o
+ | $d
  | if $d.prompt_password
-   then $q + " -W"
-   else $q
+   then $o + " -W"
+   else $o
  end'
+
+ISREADY_QUERY='("pg_isready --host=\(.host) --dbname=\(.database) --port=\(.port) --username=\(.user)")'
 
 list() {
 	jq -r '.databases | keys[]' "$DB_CONFIG_FILE_REALPATH"
 	return "$?"
 }
 
-connect() {
+config_has_database() {
 	config_has_database="$(jq -r --arg TARGET "$1" '.databases | has($TARGET)' "$DB_CONFIG_FILE_REALPATH")"
-
-	if ! [ "$config_has_database" = "true" ]; then
-		echo "Database \"$1\" is not mapped."
-		return 1
+	if [ "$config_has_database" = "true" ]; then
+		true
 	else
-		cmd="$(jq -r --arg TARGET "$1" "$QUERY" "$DB_CONFIG_FILE_REALPATH")"
-		echo "Executing $cmd"
-		$cmd
-		return 0
+		false
 	fi
+}
+
+isready() {
+	MERGED_JSON="$(jq --arg TARGET "$1" "$MERGE_QUERY" "$DB_CONFIG_FILE_REALPATH")"
+	cmd="$(echo "$MERGED_JSON" | jq -r "$ISREADY_QUERY")"
+	echo "Executing $cmd"
+	$cmd
+}
+
+connect() {
+	set_pgpassword_cmd="$(echo "$MERGED_JSON" | jq -r "$PASSWORD_QUERY")"
+	cmd="$(echo "$MERGED_JSON" | jq -r "$CONNECT_QUERY")"
+	if [ -z "$set_pgpassword_cmd" ]; then
+		echo "Prompting for password"
+		cmd="$cmd -W"
+	else
+		echo "Using predefined password"
+		$set_pgpassword_cmd
+	fi
+	echo "Executing $cmd"
+	$cmd
 }
 
 # App entry point
 if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
+	# shellcheck disable=SC2016
 	echo 'jq is not installed. Run `brew install jq`.' >&2
 	exit 1
 elif [ ! -f "$DB_CONFIG_FILE_REALPATH" ]; then
@@ -64,8 +95,15 @@ elif [ ! -f "$DB_CONFIG_FILE_REALPATH" ]; then
 	JSON
 elif [ $# -ne 1 ]; then
 	echo "$USAGE"
+	exit 1
 elif [ "$1" = "-l" ]; then
 	list
+elif ! config_has_database "$1"; then
+	echo "Database \"$1\" is not mapped."
+	exit 1
+elif ! isready "$1"; then
+	echo "Database \"$1\" is unreachable."
+	exit 1
 else
 	connect "$1"
 fi
