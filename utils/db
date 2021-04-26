@@ -3,9 +3,9 @@
 # Taken from https://stackoverflow.com/a/246128/771948
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
-  SOURCE="$(readlink "$SOURCE")"
-  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+	DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
@@ -72,12 +72,7 @@ connect() {
 	$cmd
 }
 
-# App entry point
-if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
-	# shellcheck disable=SC2016
-	echo 'jq is not installed. Run `brew install jq`.' >&2
-	exit 1
-elif [ ! -f "$DB_CONFIG_FILE_REALPATH" ]; then
+setup() {
 	echo "databases.json file does not exist"
 	echo "creating file at $DB_CONFIG_FILE_REALPATH"
 	mkdir -p "$DB_CONFIG_PARENT_DIR_PATH"
@@ -90,6 +85,15 @@ elif [ ! -f "$DB_CONFIG_FILE_REALPATH" ]; then
 	  "databases": {}
 	}
 	JSON
+}
+
+# App entry point
+if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
+	# shellcheck disable=SC2016
+	echo 'jq is not installed. Run `brew install jq`.' >&2
+	exit 1
+elif [ ! -f "$DB_CONFIG_FILE_REALPATH" ]; then
+	setup
 elif [ $# -ne 1 ]; then
 	echo "$USAGE"
 	exit 1
