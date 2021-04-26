@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# Taken from https://stackoverflow.com/a/246128/771948
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+	DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+MIC_VOLUME_CACHE_FILE_REALPATH="$(realpath "$DIR/../.private/mic_volume_cache")"
+DEFAULT_MIC_VOLUME="85"
+CURRENT_MIC_VOLUME="0"
+CACHED_MIC_VOLUME="0"
+CACHE_REGEX='^[0-9]{1,3}$'
+
+init_cache_file() {
+	if [ "$CURRENT_MIC_VOLUME" == "0" ]; then
+		echo "$DEFAULT_MIC_VOLUME" > "$MIC_VOLUME_CACHE_FILE_REALPATH"
+		echo "$DEFAULT_MIC_VOLUME"
+	else
+		echo "$CURRENT_MIC_VOLUME" > "$MIC_VOLUME_CACHE_FILE_REALPATH"
+		echo "$CURRENT_MIC_VOLUME"
+	fi
+}
+
+ensure_valid_cache_file() {
+	local value
+	value="$(cat "$MIC_VOLUME_CACHE_FILE_REALPATH")"
+
+	if [[ "$value" =~ $CACHE_REGEX ]] && [ "$value" -gt "0" ] && [ "$value" -le "100" ]; then
+		# cache is valid
+		echo "$value"
+	else
+		init_cache_file
+	fi
+}
+
+get_cached_mic_volume() {
+	if [ ! -f "$MIC_VOLUME_CACHE_FILE_REALPATH" ]; then
+		init_cache_file
+	else
+		ensure_valid_cache_file
+	fi
+}
+
+update_mic_volume_cache() {
+	if [ "$CACHED_MIC_VOLUME" != "$CURRENT_MIC_VOLUME" ]; then
+		echo "$CURRENT_MIC_VOLUME" > "$MIC_VOLUME_CACHE_FILE_REALPATH"
+	fi
+}
+
+get_current_mic_volume() {
+	osascript -e "input volume of (get volume settings)"
+}
+
+set_mic_volume() {
+	echo "setting mic volume to $1"
+	osascript -e "set volume input volume $1"
+}
+
+mute() {
+	echo "muting"
+	set_mic_volume "0"
+}
+
+unmute() {
+	echo "umuting"
+	set_mic_volume "$CACHED_MIC_VOLUME"
+}
+
+if [ "$SOURCE" != "${0}" ]; then
+	# file is being sourced instead of run
+	return 0
+fi
+
+CURRENT_MIC_VOLUME="$(get_current_mic_volume)"
+CACHED_MIC_VOLUME="$(get_cached_mic_volume)"
+
+if [ "$CURRENT_MIC_VOLUME" == "0" ]; then
+	echo "mic is muted"
+
+	unmute
+else
+	echo "mic is set to $CURRENT_MIC_VOLUME"
+
+	update_mic_volume_cache
+
+	mute
+fi
+
