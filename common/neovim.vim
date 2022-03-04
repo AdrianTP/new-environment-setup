@@ -109,10 +109,10 @@ endif
 
 if v:version >= 704
   "" Snippets
-  Plug 'SirVer/ultisnips' " snippets insertion
+  " Plug 'SirVer/ultisnips' " snippets insertion
 endif
 
-Plug 'honza/vim-snippets' " premade snippets
+" Plug 'honza/vim-snippets' " premade snippets
 
 "" Color
 Plug 'tomasr/molokai' 
@@ -726,78 +726,78 @@ augroup END
 
 " python
 
-" 2019-11-27 - adding functions to switch between normal and google python
-" conventions
-" pass 1 to return the command string
-" pass 0 (or nothing) to execute the command string immediately (to reduce
-" repetition for use in init script vs :call PyGoogle() from within vim itself
-function PyGoogle(...)
-  let cmd = 'setlocal expandtab shiftwidth=2 tabstop=2 colorcolumn=79
-      \ formatoptions+=croq softtabstop=2
-      \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with'
+" " 2019-11-27 - adding functions to switch between normal and google python
+" " conventions
+" " pass 1 to return the command string
+" " pass 0 (or nothing) to execute the command string immediately (to reduce
+" " repetition for use in init script vs :call PyGoogle() from within vim itself
+" function PyGoogle(...)
+"   let cmd = 'setlocal expandtab shiftwidth=2 tabstop=2 colorcolumn=79
+"       \ formatoptions+=croq softtabstop=2
+"       \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with'
 
-  if get(a:, 1, 0) == 1
-    return cmd
-  else
-    execute cmd
-  endif
-endfunction
+"   if get(a:, 1, 0) == 1
+"     return cmd
+"   else
+"     execute cmd
+"   endif
+" endfunction
 
-function PyStandard(...)
-  let cmd = 'setlocal expandtab shiftwidth=4 tabstop=8 colorcolumn=79
-      \ formatoptions+=croq softtabstop=4
-      \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with'
+" function PyStandard(...)
+"   let cmd = 'setlocal expandtab shiftwidth=4 tabstop=8 colorcolumn=79
+"       \ formatoptions+=croq softtabstop=4
+"       \ cinwords=if,elif,else,for,while,try,except,finally,def,class,with'
 
-  if get(a:, 1, 0) == 1
-    return cmd
-  else
-    execute cmd
-  endif
-endfunction
+"   if get(a:, 1, 0) == 1
+"     return cmd
+"   else
+"     execute cmd
+"   endif
+" endfunction
 
-" vim-python
-augroup vimrc-python
-  autocmd!
-  execute 'autocmd FileType python' . PyStandard(1)
-augroup END
+" " vim-python
+" augroup vimrc-python
+"   autocmd!
+"   execute 'autocmd FileType python' . PyStandard(1)
+" augroup END
 
-" jedi-vim
-let g:jedi#popup_on_dot = 0
-let g:jedi#goto_assignments_command = "<leader>g"
-let g:jedi#goto_definitions_command = "<leader>d"
-let g:jedi#documentation_command = "K"
-let g:jedi#usages_command = "<leader>n"
-let g:jedi#rename_command = "<leader>r"
-let g:jedi#show_call_signatures = "0"
-let g:jedi#completions_command = "<C-Space>"
-let g:jedi#smart_auto_mappings = 0
+" " jedi-vim
+" let g:jedi#popup_on_dot = 0
+" let g:jedi#goto_assignments_command = "<leader>g"
+" let g:jedi#goto_definitions_command = "<leader>d"
+" let g:jedi#documentation_command = "K"
+" let g:jedi#usages_command = "<leader>n"
+" let g:jedi#rename_command = "<leader>r"
+" let g:jedi#show_call_signatures = "0"
+" let g:jedi#completions_command = "<C-Space>"
+" let g:jedi#smart_auto_mappings = 0
 
-" syntastic
-let g:syntastic_python_checkers=['python', 'flake8']
-" OLD force syntastic to use python3 because i have both on my system, but i only
-" use python 3
-" let g:syntastic_python_python_exec = '/usr/local/bin/python3'
-" let g:syntastic_python_python_exec = '/usr/local/bin/python'
+" " syntastic
+" let g:syntastic_python_checkers=['python', 'flake8']
+" " OLD force syntastic to use python3 because i have both on my system, but i only
+" " use python 3
+" " let g:syntastic_python_python_exec = '/usr/local/bin/python3'
+" " let g:syntastic_python_python_exec = '/usr/local/bin/python'
 
-" 2019-11-27 - enable syntastic python version switching in vim
-" https://stackoverflow.com/a/43125342/771948
-function Py2()
-  let g:syntastic_python_python_exec = '/usr/local/bin/python'
-endfunction
+" " 2019-11-27 - enable syntastic python version switching in vim
+" " https://stackoverflow.com/a/43125342/771948
+" function Py2()
+"   let g:syntastic_python_python_exec = '/usr/local/bin/python'
+" endfunction
 
-function Py3()
-  let g:syntastic_python_python_exec = '/usr/local/bin/python3'
-endfunction
+" function Py3()
+"   let g:syntastic_python_python_exec = '/usr/local/bin/python3'
+" endfunction
 
-call Py3()   " default to Py3 because I try to use it when possible
+" call Py3()   " default to Py3 because I try to use it when possible
 
-" vim-airline
-let g:airline#extensions#virtualenv#enabled = 1
+" " vim-airline
+" let g:airline#extensions#virtualenv#enabled = 1
 
-" Syntax highlight
-" Default highlight is better than polyglot
-let g:polyglot_disabled = ['python']
-let python_highlight_all = 1
+" " Syntax highlight
+" " Default highlight is better than polyglot
+" let g:polyglot_disabled = ['python']
+" let python_highlight_all = 1
 
 
 " ruby
