@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+
+# Taken from https://stackoverflow.com/a/246128/771948
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+	DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+# TODO:
+# - parse config file for cron tasks instead of hard-coding them
+# - commands for management of config tasks
+#   - add [name] [url]
+#   - disable [name]
+#   - enable [name]
+#   - erase [name]
+# - consider using jd to diff json instead of pulling single sections out of json with jq and only diffing those # https://github.com/josephburnett/jd
+
+# curl https://env2.tld/endpoint.json | jq -S .rollout > "$(date -Iseconds -u)Z.json"
+
+WW_DIR="$HOME/.webwatch"
+ENV1_DIR="$WW_DIR/env1"
+ENV1_URL='https://env1.tld/endpoint.json'
+ENV2_DIR="$WW_DIR/env2"
+ENV2_URL='https://env2.tld/endpoint.json'
+ENV3_DIR="$WW_DIR/env3"
+ENV3_URL='https://env3.tld/endpoint.json'
+LOG_PATH="$WW_DIR/log.txt"
+RUN_TIMESTAMP="$(date -Iseconds -u)Z"
+DEFAULT_INTERVAL=1800 # 1800 seconds == 30 minutes
+
+USAGE="Usage:
+  webwatch [--auto] [interval]
+    Uses nohup to run webwatch in the background every 30 minutes
+    If [interval] is not defined or is non-numeric, defaults to 1800
+  webwatch [--kill]
+    Kills the background process used to run this script at the specified interval
+  webwatch [--logs]
+    Tails the log file $LOG_PATH
+  webwatch [--once]
+    Runs the script a single time, immediately
+  webwatch [--wipe]
+    Erases all files in $WW_DIR
+"
+
+setup() {
+	mkdir -p "$ENV1_DIR"
+	mkdir -p "$ENV2_DIR"
+	mkdir -p "$ENV3_DIR"
+	touch "$LOG_PATH"
+}
+
+is_numeric() {
+  [[ "$1" =~ ^[0-9]+$ ]]
+}
+
+
+fetch_env1() {
+	echo -ne "  env1..." >> "$LOG_PATH"
+	if ENV1_JSON="$(curl --silent -m 3 "$ENV1_URL")"; then
+		echo "DONE." >> "$LOG_PATH"
+		echo "$ENV1_JSON" | jq ".rollout[]" | sort > "$ENV1_DIR/rollout$RUN_TIMESTAMP"
+	else
+		echo "Timeout. Skipping." >> "$LOG_PATH"
+		osascript -e 'display notification "Unreachable!" with title "webwatch" subtitle "ENV1"'
+	fi
+}
+
+fetch_env2() {
+	echo -ne "  ENV2..." >> "$LOG_PATH"
+	if ENV2_JSON="$(curl --silent -m 3 "$ENV2_URL")"; then
+		echo "DONE." >> "$LOG_PATH"
+		echo "$ENV2_JSON" | jq ".rollout[]" | sort > "$ENV2_DIR/rollout$RUN_TIMESTAMP"
+	else
+		echo "Timeout. Skipping." >> "$LOG_PATH"
+		osascript -e 'display notification "Unreachable!" with title "webwatch" subtitle "ENV2"'
+	fi
+}
+
+fetch_env3() {
+	echo -ne "  ENV3..." >> "$LOG_PATH"
+	if ENV3_JSON="$(curl --silent -m 3 "$ENV3_URL")"; then
+		echo "DONE." >> "$LOG_PATH"
+		echo "$ENV3_JSON" | jq ".rollout[]" | sort > "$ENV3_DIR/rollout$RUN_TIMESTAMP"
+	else
+		echo "Timeout. Skipping." >> "$LOG_PATH"
+		osascript -e 'display notification "Unreachable!" with title "webwatch" subtitle "ENV3"'
+	fi
+}
+
+diff_env1() {
+	echo -ne "  ENV1..." >> "$LOG_PATH"
+	LATEST_ENV1="$ENV1_DIR/rollout$RUN_TIMESTAMP" #$(ls -r "$ENV1_DIR" | sed -n '1p')"
+	# PREVIOUS_ENV1="$(ls -r "$ENV1_DIR" | sed -n '2p')"
+	PREVIOUS_ENV1="$(find "$ENV1_DIR" -maxdepth 1 -type f -print | sort -r | cut -d' ' -f2- | head -2 | tail -1)"
+	if [ -f "$PREVIOUS_ENV1" ] && [ -f "$LATEST_ENV1" ]; then
+		ENV1_DIFF="$(diff "$PREVIOUS_ENV1" "$LATEST_ENV1")"
+		if [[ "$ENV1_DIFF" != "" ]]; then
+			echo "Difference found." >> "$LOG_PATH"
+			echo "$ENV1_DIFF" > "$ENV1_DIR/rollout$RUN_TIMESTAMP-diff"
+			osascript -e 'display notification "Rollout Config Changed!" with title "webwatch" subtitle "ENV1" sound name "Sosumi.aiff"'
+		else
+			echo "No changes detected." >> "$LOG_PATH"
+		fi
+	else
+		echo "Not enough records to compare." >> "$LOG_PATH"
+	fi
+}
+
+diff_env2() {
+	echo -ne "  ENV2..." >> "$LOG_PATH"
+	LATEST_ENV2="$ENV2_DIR/rollout$RUN_TIMESTAMP" #$(ls -r "$ENV2_DIR" | sed -n '1p')"
+	# PREVIOUS_ENV2="$(ls -r "$ENV2_DIR" | sed -n '2p')"
+	PREVIOUS_ENV2="$(find "$ENV2_DIR" -maxdepth 1 -type f -print | sort -r | cut -d' ' -f2- | head -2 | tail -1)"
+	if [ -f "$PREVIOUS_ENV2" ] && [ -f "$LATEST_ENV2" ]; then
+		ENV2_DIFF="$(diff "$PREVIOUS_ENV2" "$LATEST_ENV2")"
+		if [[ "$ENV2_DIFF" != "" ]]; then
+			echo "Change(s) detected." >> "$LOG_PATH"
+			echo "$ENV2_DIFF" > "$ENV2_DIR/rollout$RUN_TIMESTAMP-diff"
+			osascript -e 'display notification "Rollout Config Changed!" with title "webwatch" subtitle "ENV2" sound name "Sosumi.aiff"'
+		else
+			echo "No changes detected." >> "$LOG_PATH"
+		fi
+	else
+		echo "Not enough records to compare." >> "$LOG_PATH"
+	fi
+}
+
+diff_env3() {
+	echo -ne "  ENV3..." >> "$LOG_PATH"
+	LATEST_ENV3="$ENV3_DIR/rollout$RUN_TIMESTAMP" #$(ls -r "$ENV3_DIR" | sed -n '1p')"
+	# PREVIOUS_ENV3="$(ls -r "$ENV3_DIR" | sed -n '2p')"
+	PREVIOUS_ENV3="$(find "$ENV3_DIR" -maxdepth 1 -type f -print | sort -r | cut -d' ' -f2- | head -2 | tail -1)"
+	if [ -f "$PREVIOUS_ENV3" ] && [ -f "$LATEST_ENV3" ]; then
+		ENV3_DIFF="$(diff "$PREVIOUS_ENV3" "$LATEST_ENV3")"
+		if [[ "$ENV3_DIFF" != "" ]]; then
+			echo "Change(s) detected." >> "$LOG_PATH"
+			echo "$ENV3_DIFF" > "$ENV3_DIR/rollout$RUN_TIMESTAMP-diff"
+			osascript -e 'display notification "Rollout Config Changed!" with title "webwatch" subtitle "ENV3" sound name "Sosumi.aiff"'
+		else
+			echo "No changes detected." >> "$LOG_PATH"
+		fi
+	else
+		echo "Not enough records to compare." >> "$LOG_PATH"
+	fi
+}
+
+query() {
+	echo "Fetching..." >> "$LOG_PATH"
+	fetch_env1
+	fetch_env2
+	fetch_env3
+}
+
+compare() {
+	echo "Comparing..." >> "$LOG_PATH"
+	diff_env1
+	diff_env2
+	diff_env3
+}
+
+auto() {
+	echo "Running in background with nohup every $1 seconds."
+	echo "Command output is routed to $WW_DIR/log.txt"
+	nohup bash -c "while true; do $SOURCE --once; sleep $1; done" > "$WW_DIR/log.txt" &
+}
+
+kill_process() {
+	pkill -f "while true; do $SOURCE --once; sleep"
+}
+
+run() {
+	if [ ! -d "$WW_DIR" ]; then
+		echo "First-run setup: creating .webwatch directory"
+		setup
+	fi
+
+	echo '' >> "$LOG_PATH"
+	echo "$RUN_TIMESTAMP" >> "$LOG_PATH"
+	osascript -e 'display notification "Running..." with title "webwatch"'
+	query
+	compare
+}
+
+tail_log() {
+	echo "tailing $LOG_PATH:"
+	tail -f "$LOG_PATH"
+}
+
+wipe() {
+	osascript -e 'display notification "Wiping..." with title "webwatch"'
+	rm "$ENV1_DIR"/*
+	rm "$ENV2_DIR"/*
+	rm "$ENV3_DIR"/*
+	echo '' > "$WW_DIR/log.txt"
+}
+
+# App entry point
+if ! [ -x "$(command -v jq)" ]; then # https://stackoverflow.com/a/26759734/771948
+	# shellcheck disable=SC2016
+	echo 'jq is not installed. Run `brew install jq`.' >&2
+	exit 1
+elif [ $# -eq 0 ]; then
+	echo "$USAGE"
+elif [ "$1" = "--auto" ] && is_numeric "$2"; then
+	auto "$2"
+elif [ "$1" = "--auto" ]; then
+	[ $# -eq 2 ] && echo "Ignoring invalid interval $2 and using default interval $DEFAULT_INTERVAL"
+	auto "$DEFAULT_INTERVAL"
+elif [ "$1" = "--kill" ]; then
+	kill_process
+elif [ "$1" = "--logs" ]; then
+	tail_log
+elif [ "$1" = "--once" ]; then
+	run
+elif [ "$1" = "--wipe" ]; then
+	wipe
+fi
+
+exit $?
