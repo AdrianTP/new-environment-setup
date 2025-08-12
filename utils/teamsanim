@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+# Taken from https://stackoverflow.com/a/246128/771948
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+	DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+	SOURCE="$(readlink "$SOURCE")"
+	[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+FILENAME="$( basename "$SOURCE" )"
+
+TEAMS_BG_DIR="$HOME/Library/Containers/com.microsoft.teams2/Data/Library/Application Support/Microsoft/MSTeams/Backgrounds"
+TEAMS_SWAP_FILENAME="feelingDreamy7Animated_v=0.1.mp4"
+
+USAGE="Usage:
+  $FILENAME [path/to/desired.mp4]
+    1. Makes a backup copy of $TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME
+    2. Replaces the file with the one you specified
+  $FILENAME [--restore]
+    Deletes the custom background and restores the original
+"
+
+SETUP_INSTRUCTIONS="The file $TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME does not exist.
+Here's how to fix that:
+  1. Start Teams
+  2. Join a test call
+  3. Set your video background to 'Animated feeling dreamy 7'
+
+This will create the file, which will enable swapping it out for your custom file.
+"
+
+backup_file() {
+	if ! [ -f "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME" ]; then
+		cp "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME" "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME"
+	fi
+}
+
+copy_file() {
+	backup_file && echo "Backed up original file to $TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME"
+	cp "$1" "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME"
+}
+
+restore() {
+	mv "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME" "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME"
+}
+
+# App entry point
+if [ $# -ne 1 ]; then
+	echo "$USAGE"
+	exit 0
+elif ! [ -d "$TEAMS_BG_DIR" ]; then
+	echo 'Teams is storing files in a different directory than expected. Exiting.'
+	exit 1
+elif ! [ -f "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME" ]; then
+	echo "$SETUP_INSTRUCTIONS"
+	exit 0
+elif [ "$1" == "--restore" ]; then
+	restore && echo "Restored original file from backup."
+else
+	copy_file "$1" && echo "Copied $1 to $TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME"
+fi
+
+exit $?
