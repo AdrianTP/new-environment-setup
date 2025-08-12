@@ -32,13 +32,14 @@ This will create the file, which will enable swapping it out for your custom fil
 "
 
 backup_file() {
-	if ! [ -f "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME" ]; then
-		cp "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME" "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME"
-	fi
+	cp "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME" "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME"
 }
 
 copy_file() {
-	backup_file && echo "Backed up original file to $TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME"
+	if ! [ -f "$TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME" ]; then
+		backup_file && echo "Backed up original file to $TEAMS_BG_DIR/bak-$TEAMS_SWAP_FILENAME"
+	fi
+
 	cp "$1" "$TEAMS_BG_DIR/$TEAMS_SWAP_FILENAME"
 }
 
