@@ -1,0 +1,30 @@
+# .zsh_aliases
+
+# Personal Lazy Stuff
+alias brb="pmset displaysleepnow"
+alias reload="source ~/.zshrc"
+alias pbc="pbcopy"
+alias pbp="pbpaste"
+alias duptab="open . -a iterm"
+
+alias cpl="clear; pwd; ls -ahl"
+alias cplg="cpl; git status"
+
+alias gcp='git cherry-pick'
+alias be="bundle exec"
+alias br="bundle exec rspec"
+alias brnp="DISABLE_PRY=1 bundle exec rspec"
+
+# Commands I Always Forget
+alias sshi="ssh -i ~/.ssh/id_rsa" # SSH with specific key
+alias letmeopen="sudo xattr -d com.apple.quarantine" # Tell Gatekeeper to ignore an app
+alias http_ports="lsof -PiTCP -sTCP:LISTEN" # List active processes using HTTP ports
+alias mac_sn="system_profiler SPHardwareDataType | grep Serial"
+
+alias pg_root="sudo psql -U $USER postgres" # Log in to Postgres as admin
+
+alias clean_rake="redis-cli FLUSHALL; bundle exec rake" # Clear Redis cache
+alias migrate_dev="bundle exec rake db:migrate RAILS_ENV=development"
+alias migrate_test="bundle exec rake db:migrate RAILS_ENV=test"
+alias reset_dev="bundle exec db:reset RAILS_ENV=development"
+alias reset_test="bundle exec db:reset RAILS_ENV=test"
